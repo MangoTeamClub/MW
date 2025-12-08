@@ -1,0 +1,1794 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MW | 在线表格编辑器</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/handsontable/dist/handsontable.full.min.css">
+    <style>
+        :root {
+            --primary-green: #2e7d32;
+            --light-green: #e8f5e9;
+            --medium-green: #4caf50;
+            --dark-green: #1b5e20;
+            --wps-gray: #f5f5f5;
+            --wps-dark-gray: #333;
+            --wps-border: #e0e0e0;
+            --wps-toolbar-bg: #fafafa;
+            --wps-hover: #f0f0f0;
+            --wps-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+        }
+        
+        body {
+            background-color: #f0f2f5;
+            color: var(--wps-dark-gray);
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        
+        .title-bar {
+            background: linear-gradient(135deg, var(--primary-green), var(--dark-green));
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 50px;
+            box-shadow: var(--wps-shadow);
+            z-index: 100;
+        }
+        
+        .app-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            color: white;
+        }
+        
+        .app-title i {
+            font-size: 20px;
+        }
+        
+        .document-title {
+            flex: 1;
+            margin: 0 20px;
+            font-size: 16px;
+            color: white;
+            text-align: center;
+        }
+        
+        .window-controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .window-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            font-size: 16px;
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            cursor: pointer;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+        }
+        
+        .window-btn:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        .toolbar {
+            background-color: var(--wps-toolbar-bg);
+            padding: 8px 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            border-bottom: 1px solid var(--wps-border);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            padding-right: 10px;
+            margin-right: 10px;
+            border-right: 1px solid var(--wps-border);
+        }
+        
+        .toolbar-group:last-child {
+            border-right: none;
+        }
+        
+        .toolbar-btn {
+            background: none;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #444;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        
+        .toolbar-btn:hover {
+            background-color: var(--light-green);
+            color: var(--primary-green);
+        }
+        
+        .toolbar-btn.active {
+            background-color: var(--light-green);
+            color: var(--primary-green);
+            font-weight: 500;
+        }
+        
+        .toolbar-btn i {
+            font-size: 16px;
+        }
+        
+        .separator {
+            width: 1px;
+            height: 20px;
+            background-color: var(--wps-border);
+            margin: 0 5px;
+        }
+        
+        /* 文件操作栏 */
+        .file-bar {
+            background-color: white;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid var(--wps-border);
+        }
+        
+        .file-btn {
+            background-color: var(--primary-green);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(46, 125, 50, 0.2);
+        }
+        
+        .file-btn:hover {
+            background-color: var(--dark-green);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(46, 125, 50, 0.3);
+        }
+        
+        .file-btn.secondary {
+            background-color: white;
+            color: var(--primary-green);
+            border: 1px solid var(--primary-green);
+            box-shadow: none;
+        }
+        
+        .file-btn.secondary:hover {
+            background-color: var(--light-green);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(46, 125, 50, 0.2);
+        }
+        
+        /* 主要内容区 */
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        /* 侧边栏 */
+        .sidebar {
+            width: 240px;
+            background-color: white;
+            border-right: 1px solid var(--wps-border);
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .sidebar-section {
+            margin-bottom: 30px;
+        }
+        
+        .sidebar-section h3 {
+            font-size: 14px;
+            color: var(--primary-green);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 5px;
+            transition: all 0.2s;
+        }
+        
+        .sidebar-item:hover {
+            background-color: var(--light-green);
+            color: var(--primary-green);
+        }
+        
+        .sidebar-item.active {
+            background-color: var(--light-green);
+            color: var(--primary-green);
+            font-weight: 500;
+        }
+        
+        .sidebar-item i {
+            font-size: 18px;
+            width: 20px;
+            text-align: center;
+        }
+        
+        /* 编辑区域 */
+        .editor-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: white;
+            overflow: hidden;
+        }
+        
+        .table-container {
+            flex: 1;
+            padding: 20px;
+            overflow: auto;
+            background-color: #f8f9fa;
+        }
+        
+        #hot {
+            height: 100%;
+            box-shadow: var(--wps-shadow);
+            border: 1px solid var(--wps-border);
+            border-radius: 4px;
+        }
+        
+        /* 状态栏 */
+        .status-bar {
+            background-color: white;
+            padding: 8px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-top: 1px solid var(--wps-border);
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .status-item i {
+            color: var(--primary-green);
+        }
+        
+        /* 模态框 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .modal {
+            background-color: white;
+            border-radius: 8px;
+            width: 500px;
+            max-width: 90%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            border: 1px solid var(--primary-green);
+        }
+        
+        .modal-header {
+            padding: 20px;
+            background: linear-gradient(135deg, var(--primary-green), var(--dark-green));
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .modal-header h3 {
+            font-weight: 500;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .modal-footer {
+            padding: 15px 20px;
+            background-color: var(--light-green);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--primary-green);
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--wps-border);
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-green);
+            box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.1);
+        }
+        
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            margin-top: 10px;
+        }
+        
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        input[type="radio"] {
+            accent-color: var(--primary-green);
+        }
+        
+        input[type="checkbox"] {
+            accent-color: var(--primary-green);
+        }
+        
+        /* 文件类型选项 */
+        .file-type-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .file-type-option {
+            border: 2px solid var(--wps-border);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .file-type-option:hover {
+            border-color: var(--primary-green);
+            background-color: var(--light-green);
+            transform: translateY(-2px);
+        }
+        
+        .file-type-option.selected {
+            border-color: var(--primary-green);
+            background-color: var(--light-green);
+            box-shadow: 0 4px 8px rgba(46, 125, 50, 0.2);
+        }
+        
+        .file-type-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+            color: var(--primary-green);
+        }
+        
+        /* 消息提示 */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: var(--primary-green);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 4px;
+            box-shadow: var(--wps-shadow);
+            display: none;
+            align-items: center;
+            gap: 10px;
+            z-index: 1001;
+            animation: slideInRight 0.3s ease-out;
+        }
+        
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .toast.error {
+            background-color: #d32f2f;
+        }
+        
+        .toast.warning {
+            background-color: #f57c00;
+        }
+        
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--medium-green);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-green);
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 1200px) {
+            .sidebar {
+                width: 200px;
+            }
+        }
+        
+        @media (max-width: 992px) {
+            .sidebar {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .toolbar {
+                overflow-x: auto;
+            }
+            
+            .toolbar-group {
+                flex-shrink: 0;
+            }
+            
+            .table-container {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 顶部标题栏 -->
+        <div class="title-bar">
+            <div class="app-title">
+                <i class="fas fa-file-excel"></i>
+                <span>在线表格编辑器</span>
+            </div>
+            <div class="document-title" id="documentTitle">未命名表格</div>
+            <div class="window-controls">
+                <button class="window-btn" id="minimizeBtn"><i class="fas fa-minus"></i></button>
+                <button class="window-btn" id="maximizeBtn"><i class="fas fa-expand"></i></button>
+                <button class="window-btn" id="closeBtn"><i class="fas fa-times"></i></button>
+            </div>
+        </div>
+        
+        <!-- 顶部工具栏 -->
+        <div class="toolbar">
+            <div class="toolbar-group">
+                <button class="toolbar-btn" id="fileMenuBtn">
+                    <i class="fas fa-file-excel"></i>
+                    <span>文件</span>
+                </button>
+                <button class="toolbar-btn">
+                    <i class="fas fa-home"></i>
+                    <span>开始</span>
+                </button>
+                <button class="toolbar-btn">
+                    <i class="fas fa-paste"></i>
+                    <span>插入</span>
+                </button>
+                <button class="toolbar-btn">
+                    <i class="fas fa-paint-brush"></i>
+                    <span>格式</span>
+                </button>
+                <button class="toolbar-btn">
+                    <i class="fas fa-calculator"></i>
+                    <span>公式</span>
+                </button>
+                <button class="toolbar-btn">
+                    <i class="fas fa-eye"></i>
+                    <span>视图</span>
+                </button>
+            </div>
+            
+            <div class="separator"></div>
+            
+            <div class="toolbar-group">
+                <button class="toolbar-btn" id="undoBtn" title="撤销">
+                    <i class="fas fa-undo"></i>
+                </button>
+                <button class="toolbar-btn" id="redoBtn" title="重做">
+                    <i class="fas fa-redo"></i>
+                </button>
+            </div>
+            
+            <div class="separator"></div>
+            
+            <div class="toolbar-group">
+                <button class="toolbar-btn" id="cutBtn" title="剪切">
+                    <i class="fas fa-cut"></i>
+                </button>
+                <button class="toolbar-btn" id="copyBtn" title="复制">
+                    <i class="fas fa-copy"></i>
+                </button>
+                <button class="toolbar-btn" id="pasteBtn" title="粘贴">
+                    <i class="fas fa-paste"></i>
+                </button>
+            </div>
+            
+            <div class="separator"></div>
+            
+            <div class="toolbar-group">
+                <button class="toolbar-btn" id="boldBtn" title="加粗">
+                    <i class="fas fa-bold"></i>
+                </button>
+                <button class="toolbar-btn" id="italicBtn" title="斜体">
+                    <i class="fas fa-italic"></i>
+                </button>
+                <button class="toolbar-btn" id="underlineBtn" title="下划线">
+                    <i class="fas fa-underline"></i>
+                </button>
+            </div>
+            
+            <div class="separator"></div>
+            
+            <div class="toolbar-group">
+                <button class="toolbar-btn" id="alignLeftBtn" title="左对齐">
+                    <i class="fas fa-align-left"></i>
+                </button>
+                <button class="toolbar-btn" id="alignCenterBtn" title="居中对齐">
+                    <i class="fas fa-align-center"></i>
+                </button>
+                <button class="toolbar-btn" id="alignRightBtn" title="右对齐">
+                    <i class="fas fa-align-right"></i>
+                </button>
+            </div>
+            
+            <div class="separator"></div>
+            
+            <div class="toolbar-group">
+                <button class="toolbar-btn" id="insertRowBtn" title="插入行">
+                    <i class="fas fa-plus"></i>
+                    <span>行</span>
+                </button>
+                <button class="toolbar-btn" id="insertColumnBtn" title="插入列">
+                    <i class="fas fa-plus"></i>
+                    <span>列</span>
+                </button>
+                <button class="toolbar-btn" id="deleteRowBtn" title="删除行">
+                    <i class="fas fa-minus"></i>
+                    <span>行</span>
+                </button>
+                <button class="toolbar-btn" id="deleteColumnBtn" title="删除列">
+                    <i class="fas fa-minus"></i>
+                    <span>列</span>
+                </button>
+            </div>
+        </div>
+        
+        <!-- 文件操作栏 -->
+        <div class="file-bar">
+            <button class="file-btn" id="newDocumentBtn">
+                <i class="fas fa-file-excel"></i>
+                新建
+            </button>
+            <button class="file-btn secondary" id="openDocumentBtn">
+                <i class="fas fa-folder-open"></i>
+                打开
+            </button>
+            <input type="file" id="fileInput" accept=".xlsx,.xls" style="display: none;">
+            <button class="file-btn secondary" id="saveDocumentBtn">
+                <i class="fas fa-save"></i>
+                保存
+            </button>
+            <button class="file-btn secondary" id="saveAsBtn">
+                <i class="fas fa-download"></i>
+                另存为
+            </button>
+            <div style="flex: 1;"></div>
+            <button class="file-btn" id="printBtn">
+                <i class="fas fa-print"></i>
+                打印
+            </button>
+            <button class="file-btn secondary" id="exportPdfBtn">
+                <i class="fas fa-file-pdf"></i>
+                导出PDF
+            </button>
+        </div>
+        
+        <!-- 主要内容区 -->
+        <div class="main-content">
+            <!-- 侧边栏 -->
+            <div class="sidebar">
+                <div class="sidebar-section">
+                    <h3>表格操作</h3>
+                    <div class="sidebar-item active" id="sidebarHome">
+                        <i class="fas fa-home"></i>
+                        <span>表格首页</span>
+                    </div>
+                    <div class="sidebar-item" id="sidebarRecent">
+                        <i class="fas fa-history"></i>
+                        <span>最近使用</span>
+                    </div>
+                    <div class="sidebar-item" id="sidebarTemplates">
+                        <i class="fas fa-layer-group"></i>
+                        <span>模板中心</span>
+                    </div>
+                </div>
+                
+                <div class="sidebar-section">
+                    <h3>表格信息</h3>
+                    <div class="sidebar-item">
+                        <i class="fas fa-info-circle"></i>
+                        <span>表格属性</span>
+                    </div>
+                    <div class="sidebar-item">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>数据统计</span>
+                    </div>
+                    <div class="sidebar-item">
+                        <i class="fas fa-clock"></i>
+                        <span>编辑时间</span>
+                    </div>
+                </div>
+                
+                <div class="sidebar-section">
+                    <h3>格式设置</h3>
+                    <div class="sidebar-item">
+                        <i class="fas fa-font"></i>
+                        <span>字体设置</span>
+                    </div>
+                    <div class="sidebar-item">
+                        <i class="fas fa-border-all"></i>
+                        <span>边框样式</span>
+                    </div>
+                    <div class="sidebar-item">
+                        <i class="fas fa-fill-drip"></i>
+                        <span>填充颜色</span>
+                    </div>
+                    <div class="sidebar-item">
+                        <i class="fas fa-sort-numeric-down"></i>
+                        <span>数字格式</span>
+                    </div>
+                </div>
+                
+                <div class="sidebar-section">
+                    <h3>高级功能</h3>
+                    <div class="sidebar-item">
+                        <i class="fas fa-chart-line"></i>
+                        <span>图表制作</span>
+                    </div>
+                    <div class="sidebar-item">
+                        <i class="fas fa-filter"></i>
+                        <span>数据筛选</span>
+                    </div>
+                    <div class="sidebar-item">
+                        <i class="fas fa-sort"></i>
+                        <span>数据排序</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 编辑区域 -->
+            <div class="editor-container">
+                <div class="table-container">
+                    <div id="hot"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 状态栏 -->
+        <div class="status-bar">
+            <div class="status-item">
+                <i class="fas fa-keyboard"></i>
+                <span>中文(简体)</span>
+            </div>
+            <div class="status-item">
+                <i class="fas fa-table"></i>
+                <span>单元格: <span id="cellInfo">A1</span></span>
+            </div>
+            <div class="status-item">
+                <i class="fas fa-expand-alt"></i>
+                <span>表格大小: <span id="tableSize">10x10</span></span>
+            </div>
+            <div class="status-item">
+                <i class="fas fa-leaf"></i>
+                <span>绿色表格编辑器</span>
+            </div>
+            <div class="status-item">
+                <i class="fas fa-ruler-combined"></i>
+                <span>100%</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 新建表格模态框 -->
+    <div class="modal-overlay" id="newDocumentModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>新建表格</h3>
+                <button class="modal-close" id="closeNewModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>表格名称</label>
+                    <input type="text" class="form-control" id="newDocumentName" placeholder="请输入表格名称" value="未命名表格">
+                </div>
+                <div class="form-group">
+                    <label>表格类型</label>
+                    <div class="file-type-options">
+                        <div class="file-type-option selected" data-type="blank">
+                            <div class="file-type-icon">
+                                <i class="fas fa-file-excel"></i>
+                            </div>
+                            <div>空白表格</div>
+                        </div>
+                        <div class="file-type-option" data-type="template">
+                            <div class="file-type-icon">
+                                <i class="fas fa-file-contract"></i>
+                            </div>
+                            <div>使用模板</div>
+                        </div>
+                        <div class="file-type-option" data-type="import">
+                            <div class="file-type-icon">
+                                <i class="fas fa-file-import"></i>
+                            </div>
+                            <div>导入文件</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>表格尺寸</label>
+                    <div style="display: flex; gap: 10px;">
+                        <div style="flex: 1;">
+                            <label style="font-size: 12px; color: #666;">行数</label>
+                            <input type="number" class="form-control" id="rowsCount" min="1" max="1000" value="10">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="font-size: 12px; color: #666;">列数</label>
+                            <input type="number" class="form-control" id="colsCount" min="1" max="100" value="10">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>预设模板</label>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="file-btn secondary" style="padding: 6px 12px; font-size: 12px;" id="budgetTemplate">预算表</button>
+                        <button class="file-btn secondary" style="padding: 6px 12px; font-size: 12px;" id="inventoryTemplate">库存表</button>
+                        <button class="file-btn secondary" style="padding: 6px 12px; font-size: 12px;" id="scheduleTemplate">日程表</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="file-btn secondary" id="cancelNewDocument">取消</button>
+                <button class="file-btn" id="createNewDocument">创建</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 保存表格模态框 -->
+    <div class="modal-overlay" id="saveDocumentModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>保存表格</h3>
+                <button class="modal-close" id="closeSaveModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>表格名称</label>
+                    <input type="text" class="form-control" id="saveDocumentName" placeholder="请输入表格名称">
+                </div>
+                <div class="form-group">
+                    <label>保存格式</label>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="formatXlsx" name="format" value="xlsx" checked>
+                            <label for="formatXlsx">.xlsx (Excel文档)</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="formatXls" name="format" value="xls">
+                            <label for="formatXls">.xls (Excel 97-2003文档)</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="formatCsv" name="format" value="csv">
+                            <label for="formatCsv">.csv (逗号分隔值)</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>保存位置</label>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="saveLocal" name="saveLocation" value="local" checked>
+                            <label for="saveLocal">本地下载</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="saveCloud" name="saveLocation" value="cloud" disabled>
+                            <label for="saveCloud">云存储(暂不可用)</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="radio-option">
+                        <input type="checkbox" id="includeFormulas" checked>
+                        <label for="includeFormulas">包含公式</label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="file-btn secondary" id="cancelSaveDocument">取消</button>
+                <button class="file-btn" id="confirmSaveDocument">保存</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 打开表格模态框 -->
+    <div class="modal-overlay" id="openDocumentModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>打开表格</h3>
+                <button class="modal-close" id="closeOpenModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>选择文件</label>
+                    <input type="file" class="form-control" id="openFileInput" accept=".xlsx,.xls,.csv">
+                </div>
+                <div class="form-group">
+                    <p style="font-size: 14px; color: #666; margin-top: 10px;">
+                        <i class="fas fa-info-circle"></i>
+                        支持打开 .xlsx, .xls, .csv 格式的文件
+                    </p>
+                </div>
+                <div class="form-group">
+                    <div class="radio-option">
+                        <input type="checkbox" id="autoDetectFormulas" checked>
+                        <label for="autoDetectFormulas">自动检测公式</label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="file-btn secondary" id="cancelOpenDocument">取消</button>
+                <button class="file-btn" id="confirmOpenDocument">打开</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 消息提示 -->
+    <div class="toast" id="toast">
+        <i class="fas fa-check-circle"></i>
+        <span id="toastMessage">操作成功</span>
+    </div>
+
+    <!-- 引入必要的库 -->
+    <script src="https://unpkg.com/handsontable/dist/handsontable.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    
+    <script>
+        // 初始化Handsontable表格编辑器
+        let hot;
+        let container = document.getElementById('hot');
+        
+        // 初始数据
+        let initialData = [
+            ['产品', '第一季度', '第二季度', '第三季度', '第四季度', '总计'],
+            ['产品A', 12000, 15000, 18000, 20000, '=SUM(B2:E2)'],
+            ['产品B', 8000, 9000, 12000, 11000, '=SUM(B3:E3)'],
+            ['产品C', 6000, 7000, 8000, 9000, '=SUM(B4:E4)'],
+            ['产品D', 10000, 11000, 13000, 15000, '=SUM(B5:E5)'],
+            ['总计', '=SUM(B2:B5)', '=SUM(C2:C5)', '=SUM(D2:D5)', '=SUM(E2:E5)', '=SUM(F2:F5)']
+        ];
+        
+        // 初始化表格
+        function initTable(data = initialData, rows = 10, cols = 10) {
+            if (hot) {
+                hot.destroy();
+            }
+            
+            // 确保数据有足够的行和列
+            let newData = [];
+            for (let i = 0; i < rows; i++) {
+                let row = [];
+                for (let j = 0; j < cols; j++) {
+                    if (data[i] && data[i][j] !== undefined) {
+                        row.push(data[i][j]);
+                    } else {
+                        row.push('');
+                    }
+                }
+                newData.push(row);
+            }
+            
+            hot = new Handsontable(container, {
+                data: newData,
+                rowHeaders: true,
+                colHeaders: true,
+                filters: true,
+                dropdownMenu: true,
+                contextMenu: true,
+                height: '100%',
+                width: '100%',
+                licenseKey: 'non-commercial-and-evaluation',
+                cells: function(row, col) {
+                    const cellProperties = {};
+                    
+                    // 设置第一行为标题行
+                    if (row === 0) {
+                        cellProperties.readOnly = true;
+                        cellProperties.renderer = firstRowRenderer;
+                    }
+                    
+                    // 设置第一列为标题列
+                    if (col === 0 && row > 0) {
+                        cellProperties.renderer = firstColRenderer;
+                    }
+                    
+                    // 设置总计行和列
+                    const totalRow = newData.length - 1;
+                    const totalCol = newData[0].length - 1;
+                    
+                    if (row === totalRow || col === totalCol) {
+                        cellProperties.renderer = totalCellRenderer;
+                    }
+                    
+                    return cellProperties;
+                },
+                afterSelection: function(r, c, r2, c2) {
+                    // 更新状态栏中的单元格信息
+                    const cellInfo = getCellAddress(r, c);
+                    document.getElementById('cellInfo').textContent = cellInfo;
+                },
+                afterChange: function(changes, source) {
+                    if (source === 'loadData') {
+                        return;
+                    }
+                    updateTableSize();
+                }
+            });
+            
+            updateTableSize();
+        }
+        
+        // 自定义渲染器：第一行
+        function firstRowRenderer(instance, td, row, col, prop, value, cellProperties) {
+            Handsontable.renderers.TextRenderer.apply(this, arguments);
+            td.style.fontWeight = 'bold';
+            td.style.backgroundColor = '#e8f5e9';
+            td.style.color = '#1b5e20';
+            td.style.textAlign = 'center';
+            td.style.borderBottom = '2px solid #2e7d32';
+        }
+        
+        // 自定义渲染器：第一列
+        function firstColRenderer(instance, td, row, col, prop, value, cellProperties) {
+            Handsontable.renderers.TextRenderer.apply(this, arguments);
+            td.style.fontWeight = 'bold';
+            td.style.backgroundColor = '#f1f8e9';
+        }
+        
+        // 自定义渲染器：总计单元格
+        function totalCellRenderer(instance, td, row, col, prop, value, cellProperties) {
+            Handsontable.renderers.TextRenderer.apply(this, arguments);
+            td.style.fontWeight = 'bold';
+            td.style.backgroundColor = '#f1f8e9';
+            td.style.borderTop = '2px solid #2e7d32';
+        }
+        
+        // 获取单元格地址（如A1）
+        function getCellAddress(row, col) {
+            const colLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            let colName = '';
+            let colIndex = col;
+            
+            while (colIndex >= 0) {
+                colName = colLetters[colIndex % 26] + colName;
+                colIndex = Math.floor(colIndex / 26) - 1;
+            }
+            
+            return colName + (row + 1);
+        }
+        
+        // 更新表格大小信息
+        function updateTableSize() {
+            if (hot) {
+                const rows = hot.countRows();
+                const cols = hot.countCols();
+                document.getElementById('tableSize').textContent = `${rows}×${cols}`;
+            }
+        }
+        
+        // 元素引用
+        const documentTitle = document.getElementById('documentTitle');
+        const fileInput = document.getElementById('fileInput');
+        
+        // 模态框元素
+        const newDocumentModal = document.getElementById('newDocumentModal');
+        const saveDocumentModal = document.getElementById('saveDocumentModal');
+        const openDocumentModal = document.getElementById('openDocumentModal');
+        
+        // 当前文档状态
+        let currentDocument = {
+            name: '未命名表格',
+            data: initialData,
+            format: 'xlsx',
+            lastModified: new Date(),
+            rows: 10,
+            cols: 10
+        };
+        
+        // 显示消息提示
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            // 更新图标
+            const icon = toast.querySelector('i');
+            if (type === 'error') {
+                icon.className = 'fas fa-exclamation-circle';
+            } else if (type === 'warning') {
+                icon.className = 'fas fa-exclamation-triangle';
+            } else {
+                icon.className = 'fas fa-check-circle';
+            }
+            
+            toastMessage.textContent = message;
+            toast.className = 'toast';
+            toast.classList.add(type);
+            toast.style.display = 'flex';
+            
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+        
+        // 显示模态框
+        function showModal(modal) {
+            modal.style.display = 'flex';
+        }
+        
+        // 隐藏模态框
+        function hideModal(modal) {
+            modal.style.display = 'none';
+        }
+        
+        // 初始化表格
+        initTable();
+        
+        // 文件类型选项选择
+        document.querySelectorAll('.file-type-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.file-type-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                this.classList.add('selected');
+            });
+        });
+        
+        // 工具栏按钮功能
+        document.getElementById('boldBtn').addEventListener('click', function() {
+            if (hot) {
+                const selected = hot.getSelected();
+                if (selected) {
+                    const [startRow, startCol, endRow, endCol] = selected[0];
+                    for (let row = startRow; row <= endRow; row++) {
+                        for (let col = startCol; col <= endCol; col++) {
+                            const meta = hot.getCellMeta(row, col);
+                            meta.bold = !meta.bold;
+                            hot.setCellMeta(row, col, 'bold', meta.bold);
+                        }
+                    }
+                    hot.render();
+                }
+            }
+            this.classList.toggle('active');
+        });
+        
+        document.getElementById('italicBtn').addEventListener('click', function() {
+            if (hot) {
+                const selected = hot.getSelected();
+                if (selected) {
+                    const [startRow, startCol, endRow, endCol] = selected[0];
+                    for (let row = startRow; row <= endRow; row++) {
+                        for (let col = startCol; col <= endCol; col++) {
+                            const meta = hot.getCellMeta(row, col);
+                            meta.italic = !meta.italic;
+                            hot.setCellMeta(row, col, 'italic', meta.italic);
+                        }
+                    }
+                    hot.render();
+                }
+            }
+            this.classList.toggle('active');
+        });
+        
+        document.getElementById('underlineBtn').addEventListener('click', function() {
+            if (hot) {
+                const selected = hot.getSelected();
+                if (selected) {
+                    const [startRow, startCol, endRow, endCol] = selected[0];
+                    for (let row = startRow; row <= endRow; row++) {
+                        for (let col = startCol; col <= endCol; col++) {
+                            const meta = hot.getCellMeta(row, col);
+                            meta.underline = !meta.underline;
+                            hot.setCellMeta(row, col, 'underline', meta.underline);
+                        }
+                    }
+                    hot.render();
+                }
+            }
+            this.classList.toggle('active');
+        });
+        
+        document.getElementById('alignLeftBtn').addEventListener('click', function() {
+            if (hot) {
+                const selected = hot.getSelected();
+                if (selected) {
+                    const [startRow, startCol, endRow, endCol] = selected[0];
+                    for (let row = startRow; row <= endRow; row++) {
+                        for (let col = startCol; col <= endCol; col++) {
+                            hot.setCellMeta(row, col, 'className', 'htLeft');
+                        }
+                    }
+                    hot.render();
+                }
+            }
+            updateAlignmentButtons('left');
+        });
+        
+        document.getElementById('alignCenterBtn').addEventListener('click', function() {
+            if (hot) {
+                const selected = hot.getSelected();
+                if (selected) {
+                    const [startRow, startCol, endRow, endCol] = selected[0];
+                    for (let row = startRow; row <= endRow; row++) {
+                        for (let col = startCol; col <= endCol; col++) {
+                            hot.setCellMeta(row, col, 'className', 'htCenter');
+                        }
+                    }
+                    hot.render();
+                }
+            }
+            updateAlignmentButtons('center');
+        });
+        
+        document.getElementById('alignRightBtn').addEventListener('click', function() {
+            if (hot) {
+                const selected = hot.getSelected();
+                if (selected) {
+                    const [startRow, startCol, endRow, endCol] = selected[0];
+                    for (let row = startRow; row <= endRow; row++) {
+                        for (let col = startCol; col <= endCol; col++) {
+                            hot.setCellMeta(row, col, 'className', 'htRight');
+                        }
+                    }
+                    hot.render();
+                }
+            }
+            updateAlignmentButtons('right');
+        });
+        
+        document.getElementById('insertRowBtn').addEventListener('click', function() {
+            if (hot) {
+                const selected = hot.getSelected();
+                if (selected) {
+                    const [startRow] = selected[0];
+                    hot.alter('insert_row', startRow + 1);
+                    updateTableSize();
+                    showToast('已插入新行');
+                }
+            }
+        });
+        
+        document.getElementById('insertColumnBtn').addEventListener('click', function() {
+            if (hot) {
+                const selected = hot.getSelected();
+                if (selected) {
+                    const [startRow, startCol] = selected[0];
+                    hot.alter('insert_col', startCol + 1);
+                    updateTableSize();
+                    showToast('已插入新列');
+                }
+            }
+        });
+        
+        document.getElementById('deleteRowBtn').addEventListener('click', function() {
+            if (hot) {
+                const selected = hot.getSelected();
+                if (selected) {
+                    const [startRow, startCol, endRow, endCol] = selected[0];
+                    for (let row = endRow; row >= startRow; row--) {
+                        hot.alter('remove_row', row);
+                    }
+                    updateTableSize();
+                    showToast('已删除行');
+                }
+            }
+        });
+        
+        document.getElementById('deleteColumnBtn').addEventListener('click', function() {
+            if (hot) {
+                const selected = hot.getSelected();
+                if (selected) {
+                    const [startRow, startCol, endRow, endCol] = selected[0];
+                    for (let col = endCol; col >= startCol; col--) {
+                        hot.alter('remove_col', col);
+                    }
+                    updateTableSize();
+                    showToast('已删除列');
+                }
+            }
+        });
+        
+        document.getElementById('undoBtn').addEventListener('click', function() {
+            if (hot) {
+                hot.undo();
+                showToast('已撤销操作');
+            }
+        });
+        
+        document.getElementById('redoBtn').addEventListener('click', function() {
+            if (hot) {
+                hot.redo();
+                showToast('已重做操作');
+            }
+        });
+        
+        document.getElementById('cutBtn').addEventListener('click', function() {
+            if (hot) {
+                const selected = hot.getSelected();
+                if (selected) {
+                    showToast('已剪切选中内容');
+                }
+            }
+        });
+        
+        document.getElementById('copyBtn').addEventListener('click', function() {
+            if (hot) {
+                const selected = hot.getSelected();
+                if (selected) {
+                    showToast('已复制选中内容');
+                }
+            }
+        });
+        
+        document.getElementById('pasteBtn').addEventListener('click', function() {
+            if (hot) {
+                showToast('已粘贴内容');
+            }
+        });
+        
+        // 更新对齐按钮状态
+        function updateAlignmentButtons(alignment) {
+            document.querySelectorAll('[id^="align"]').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            if (alignment === 'left') {
+                document.getElementById('alignLeftBtn').classList.add('active');
+            } else if (alignment === 'center') {
+                document.getElementById('alignCenterBtn').classList.add('active');
+            } else if (alignment === 'right') {
+                document.getElementById('alignRightBtn').classList.add('active');
+            }
+        }
+        
+        // 新建表格
+        document.getElementById('newDocumentBtn').addEventListener('click', function() {
+            document.getElementById('newDocumentName').value = '未命名表格';
+            document.getElementById('rowsCount').value = 10;
+            document.getElementById('colsCount').value = 10;
+            showModal(newDocumentModal);
+        });
+        
+        // 模板数据
+        const budgetTemplate = [
+            ['预算项目', '一月', '二月', '三月', '四月', '五月', '六月', '总计'],
+            ['工资支出', 50000, 50000, 50000, 50000, 50000, 50000, '=SUM(B2:G2)'],
+            ['办公用品', 2000, 1500, 1800, 2200, 1900, 2100, '=SUM(B3:G3)'],
+            ['市场推广', 8000, 10000, 12000, 9000, 11000, 13000, '=SUM(B4:G4)'],
+            ['设备购置', 15000, 0, 0, 8000, 0, 0, '=SUM(B5:G5)'],
+            ['其他支出', 3000, 2500, 2800, 3200, 2700, 2900, '=SUM(B6:G6)'],
+            ['总计支出', '=SUM(B2:B6)', '=SUM(C2:C6)', '=SUM(D2:D6)', '=SUM(E2:E6)', '=SUM(F2:F6)', '=SUM(G2:G6)', '=SUM(H2:H6)']
+        ];
+        
+        const inventoryTemplate = [
+            ['产品名称', '库存数量', '单价', '总价值', '最低库存', '状态'],
+            ['产品A', 150, 120, '=B2*C2', 50, '=IF(B2>D2,"充足",IF(B2>D2*0.5,"预警","缺货"))'],
+            ['产品B', 80, 200, '=B3*C3', 30, '=IF(B3>D3,"充足",IF(B3>D3*0.5,"预警","缺货"))'],
+            ['产品C', 25, 350, '=B4*C4', 15, '=IF(B4>D4,"充足",IF(B4>D4*0.5,"预警","缺货"))'],
+            ['产品D', 120, 85, '=B5*C5', 40, '=IF(B5>D5,"充足",IF(B5>D5*0.5,"预警","缺货"))'],
+            ['产品E', 60, 150, '=B6*C6', 25, '=IF(B6>D6,"充足",IF(B6>D6*0.5,"预警","缺货"))'],
+            ['总计', '=SUM(B2:B6)', '-', '=SUM(D2:D6)', '-', '-']
+        ];
+        
+        const scheduleTemplate = [
+            ['时间', '周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+            ['09:00-10:00', '会议', '项目讨论', '客户拜访', '文档编写', '团队会议', '休息', '休息'],
+            ['10:00-11:00', '会议', '项目讨论', '客户拜访', '文档编写', '团队会议', '学习', '学习'],
+            ['11:00-12:00', '邮件处理', '代码开发', '客户拜访', '文档编写', '代码审查', '学习', '学习'],
+            ['13:00-14:00', '午休', '午休', '午休', '午休', '午休', '午休', '午休'],
+            ['14:00-15:00', '项目管理', '代码开发', '内部培训', '项目规划', '代码开发', '运动', '运动'],
+            ['15:00-16:00', '项目管理', '代码开发', '内部培训', '项目规划', '代码开发', '运动', '运动'],
+            ['16:00-17:00', '进度汇报', '测试', '团队建设', '进度汇报', '测试', '娱乐', '娱乐'],
+            ['17:00-18:00', '总结计划', '文档整理', '团队建设', '总结计划', '文档整理', '娱乐', '娱乐']
+        ];
+        
+        // 模板按钮事件
+        document.getElementById('budgetTemplate').addEventListener('click', function() {
+            document.getElementById('newDocumentName').value = '年度预算表';
+            document.querySelector('.file-type-option[data-type="template"]').click();
+        });
+        
+        document.getElementById('inventoryTemplate').addEventListener('click', function() {
+            document.getElementById('newDocumentName').value = '库存管理表';
+            document.querySelector('.file-type-option[data-type="template"]').click();
+        });
+        
+        document.getElementById('scheduleTemplate').addEventListener('click', function() {
+            document.getElementById('newDocumentName').value = '每周日程表';
+            document.querySelector('.file-type-option[data-type="template"]').click();
+        });
+        
+        document.getElementById('createNewDocument').addEventListener('click', function() {
+            const docName = document.getElementById('newDocumentName').value || '未命名表格';
+            const selectedType = document.querySelector('.file-type-option.selected').getAttribute('data-type');
+            const rows = parseInt(document.getElementById('rowsCount').value) || 10;
+            const cols = parseInt(document.getElementById('colsCount').value) || 10;
+            
+            if (selectedType === 'blank') {
+                // 创建空白表格
+                const blankData = [];
+                for (let i = 0; i < rows; i++) {
+                    const row = [];
+                    for (let j = 0; j < cols; j++) {
+                        row.push('');
+                    }
+                    blankData.push(row);
+                }
+                
+                initTable(blankData, rows, cols);
+                currentDocument.name = docName;
+                currentDocument.rows = rows;
+                currentDocument.cols = cols;
+                documentTitle.textContent = currentDocument.name;
+                showToast('已创建新表格');
+            } else if (selectedType === 'import') {
+                // 导入文件
+                fileInput.click();
+            } else if (selectedType === 'template') {
+                // 使用模板
+                let templateData;
+                if (docName.includes('预算')) {
+                    templateData = budgetTemplate;
+                } else if (docName.includes('库存')) {
+                    templateData = inventoryTemplate;
+                } else if (docName.includes('日程')) {
+                    templateData = scheduleTemplate;
+                } else {
+                    templateData = initialData;
+                }
+                
+                initTable(templateData, Math.max(rows, templateData.length), Math.max(cols, templateData[0].length));
+                currentDocument.name = docName;
+                currentDocument.rows = Math.max(rows, templateData.length);
+                currentDocument.cols = Math.max(cols, templateData[0].length);
+                documentTitle.textContent = currentDocument.name;
+                showToast('已使用模板创建表格');
+            }
+            
+            hideModal(newDocumentModal);
+        });
+        
+        document.getElementById('cancelNewDocument').addEventListener('click', function() {
+            hideModal(newDocumentModal);
+        });
+        
+        document.getElementById('closeNewModal').addEventListener('click', function() {
+            hideModal(newDocumentModal);
+        });
+        
+        // 打开表格
+        document.getElementById('openDocumentBtn').addEventListener('click', function() {
+            showModal(openDocumentModal);
+        });
+        
+        document.getElementById('openFileInput').addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const fileName = file.name;
+            const fileExt = fileName.split('.').pop().toLowerCase();
+            
+            try {
+                if (fileExt === 'xlsx' || fileExt === 'xls' || fileExt === 'csv') {
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(e) {
+                        try {
+                            const data = e.target.result;
+                            let workbook, worksheet, jsonData;
+                            
+                            if (fileExt === 'csv') {
+                                // 处理CSV文件
+                                const csvData = e.target.result;
+                                jsonData = XLSX.utils.csv_to_sheet(csvData);
+                                jsonData = XLSX.utils.sheet_to_json(jsonData, {header: 1});
+                            } else {
+                                // 处理Excel文件
+                                workbook = XLSX.read(data, {type: 'binary'});
+                                
+                                // 获取第一个工作表
+                                const firstSheetName = workbook.SheetNames[0];
+                                worksheet = workbook.Sheets[firstSheetName];
+                                
+                                // 将工作表转换为JSON数据
+                                jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+                            }
+                            
+                            // 初始化表格
+                            const rows = jsonData.length || 10;
+                            const cols = jsonData[0] ? jsonData[0].length : 10;
+                            initTable(jsonData, rows, cols);
+                            
+                            currentDocument.name = fileName.replace(/\.[^/.]+$/, "");
+                            currentDocument.rows = rows;
+                            currentDocument.cols = cols;
+                            documentTitle.textContent = currentDocument.name;
+                            
+                            showToast(`已打开: ${fileName}`);
+                            hideModal(openDocumentModal);
+                        } catch (error) {
+                            console.error('文件解析错误:', error);
+                            showToast('解析文件时出错: ' + error.message, 'error');
+                        }
+                    };
+                    
+                    reader.onerror = function() {
+                        showToast('读取文件失败', 'error');
+                    };
+                    
+                    if (fileExt === 'csv') {
+                        reader.readAsText(file);
+                    } else {
+                        reader.readAsBinaryString(file);
+                    }
+                } else {
+                    showToast('不支持的文件格式', 'error');
+                    return;
+                }
+                
+            } catch (error) {
+                console.error('文件打开错误:', error);
+                showToast('打开文件时出错: ' + error.message, 'error');
+            }
+        });
+        
+        document.getElementById('confirmOpenDocument').addEventListener('click', function() {
+            document.getElementById('openFileInput').click();
+        });
+        
+        document.getElementById('cancelOpenDocument').addEventListener('click', function() {
+            hideModal(openDocumentModal);
+        });
+        
+        document.getElementById('closeOpenModal').addEventListener('click', function() {
+            hideModal(openDocumentModal);
+        });
+        
+        // 保存表格
+        document.getElementById('saveDocumentBtn').addEventListener('click', function() {
+            document.getElementById('saveDocumentName').value = currentDocument.name;
+            showModal(saveDocumentModal);
+        });
+        
+        document.getElementById('saveAsBtn').addEventListener('click', function() {
+            document.getElementById('saveDocumentName').value = currentDocument.name;
+            showModal(saveDocumentModal);
+        });
+        
+        document.getElementById('exportPdfBtn').addEventListener('click', function() {
+            showToast('PDF导出功能正在开发中', 'warning');
+        });
+        
+        document.getElementById('confirmSaveDocument').addEventListener('click', async function() {
+            const docName = document.getElementById('saveDocumentName').value || currentDocument.name;
+            const format = document.querySelector('input[name="format"]:checked').value;
+            const saveLocation = document.querySelector('input[name="saveLocation"]:checked').value;
+            const includeFormulas = document.getElementById('includeFormulas').checked;
+            
+            // 更新当前文档名称
+            currentDocument.name = docName;
+            documentTitle.textContent = currentDocument.name;
+            
+            try {
+                if (saveLocation === 'local') {
+                    // 获取表格数据
+                    const data = hot.getData();
+                    
+                    if (format === 'csv') {
+                        // 保存为CSV格式
+                        let csvContent = "";
+                        data.forEach(row => {
+                            const csvRow = row.map(cell => {
+                                // 处理包含逗号或引号的内容
+                                if (typeof cell === 'string' && (cell.includes(',') || cell.includes('"'))) {
+                                    return '"' + cell.replace(/"/g, '""') + '"';
+                                }
+                                return cell;
+                            }).join(",");
+                            csvContent += csvRow + "\r\n";
+                        });
+                        
+                        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                        const fileName = `${docName}.csv`;
+                        saveAs(blob, fileName);
+                    } else {
+                        // 保存为Excel格式
+                        const ws = XLSX.utils.aoa_to_sheet(data);
+                        const wb = XLSX.utils.book_new();
+                        XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+                        
+                        // 生成文件名
+                        const fileName = `${docName}.${format}`;
+                        
+                        // 写入文件
+                        XLSX.writeFile(wb, fileName);
+                    }
+                    
+                    showToast(`表格已保存为 ${docName}.${format}`);
+                }
+                
+                hideModal(saveDocumentModal);
+                
+            } catch (error) {
+                console.error('保存错误:', error);
+                showToast('保存失败: ' + error.message, 'error');
+            }
+        });
+        
+        document.getElementById('cancelSaveDocument').addEventListener('click', function() {
+            hideModal(saveDocumentModal);
+        });
+        
+        document.getElementById('closeSaveModal').addEventListener('click', function() {
+            hideModal(saveDocumentModal);
+        });
+        
+        // 打印功能
+        document.getElementById('printBtn').addEventListener('click', function() {
+            const printWindow = window.open('', '_blank');
+            const tableData = hot.getData();
+            
+            // 创建打印内容
+            let printContent = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>打印 - ${currentDocument.name}</title>
+                    <style>
+                        body { font-family: "Microsoft YaHei", sans-serif; line-height: 1.6; padding: 20px; background-color: #f8f9fa; }
+                        .print-header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #2e7d32; padding-bottom: 10px; }
+                        .print-header h2 { color: #2e7d32; margin: 0; }
+                        .print-info { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 14px; color: #666; }
+                        table { border-collapse: collapse; width: 100%; background-color: white; }
+                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                        th { background-color: #e8f5e9; color: #1b5e20; font-weight: bold; }
+                        .total-row { background-color: #f1f8e9; font-weight: bold; }
+                        @media print {
+                            body { padding: 0; }
+                            .no-print { display: none; }
+                        }
+                        .no-print { text-align: center; margin-top: 20px; }
+                        .no-print button { background-color: #2e7d32; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
+                    </style>
+                </head>
+                <body>
+                    <div class="print-header">
+                        <h2>${currentDocument.name}</h2>
+                    </div>
+                    <div class="print-info">
+                        <div>打印时间: ${new Date().toLocaleString()}</div>
+                        <div>表格大小: ${hot.countRows()}行 × ${hot.countCols()}列</div>
+                    </div>
+                    <table>
+            `;
+            
+            // 添加表头
+            printContent += '<thead><tr>';
+            const colCount = hot.countCols();
+            for (let i = 0; i < colCount; i++) {
+                const colHeader = hot.getColHeader(i);
+                printContent += `<th>${colHeader}</th>`;
+            }
+            printContent += '</tr></thead><tbody>';
+            
+            // 添加表格数据
+            tableData.forEach((row, rowIndex) => {
+                const isTotalRow = rowIndex === tableData.length - 1;
+                printContent += `<tr class="${isTotalRow ? 'total-row' : ''}">`;
+                row.forEach(cell => {
+                    printContent += `<td>${cell || ''}</td>`;
+                });
+                printContent += '</tr>';
+            });
+            
+            printContent += `
+                    </tbody>
+                    </table>
+                    <div class="no-print">
+                        <button onclick="window.print()">打印</button>
+                        <button onclick="window.close()" style="margin-left: 10px; background-color: #666;">关闭</button>
+                    </div>
+                </body>
+                </html>
+            `;
+            
+            printWindow.document.write(printContent);
+            printWindow.document.close();
+        });
+        
+        // 侧边栏功能
+        document.querySelectorAll('.sidebar-item').forEach(item => {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.sidebar-item').forEach(i => {
+                    i.classList.remove('active');
+                });
+                this.classList.add('active');
+                
+                const id = this.id;
+                if (id === 'sidebarRecent') {
+                    showToast('最近表格功能正在开发中', 'warning');
+                } else if (id === 'sidebarTemplates') {
+                    showToast('模板中心功能正在开发中', 'warning');
+                }
+            });
+        });
+        
+        // 窗口控制按钮
+        document.getElementById('minimizeBtn').addEventListener('click', function() {
+            showToast('窗口最小化功能在Web环境中不可用', 'warning');
+        });
+        
+        document.getElementById('maximizeBtn').addEventListener('click', function() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    showToast('全屏模式不可用: ' + err.message, 'warning');
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        });
+        
+        document.getElementById('closeBtn').addEventListener('click', function() {
+            if (hot && hot.getData().some(row => row.some(cell => cell))) {
+                if (confirm('您有未保存的更改。确定要离开吗？')) {
+                    showToast('编辑器已关闭', 'warning');
+                }
+            } else {
+                showToast('编辑器已关闭', 'warning');
+            }
+        });
+        
+        // 初始化对齐按钮状态
+        updateAlignmentButtons('left');
+        
+        // 显示欢迎消息
+        setTimeout(() => {
+            showToast('欢迎使用绿色主题在线表格编辑器！');
+        }, 1000);
+        
+        // 添加键盘快捷键支持
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+S 保存
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                document.getElementById('saveDocumentBtn').click();
+            }
+            
+            // Ctrl+O 打开
+            if (e.ctrlKey && e.key === 'o') {
+                e.preventDefault();
+                document.getElementById('openDocumentBtn').click();
+            }
+            
+            // Ctrl+N 新建
+            if (e.ctrlKey && e.key === 'n') {
+                e.preventDefault();
+                document.getElementById('newDocumentBtn').click();
+            }
+            
+            // Ctrl+P 打印
+            if (e.ctrlKey && e.key === 'p') {
+                e.preventDefault();
+                document.getElementById('printBtn').click();
+            }
+            
+            // Ctrl+Z 撤销
+            if (e.ctrlKey && e.key === 'z') {
+                e.preventDefault();
+                document.getElementById('undoBtn').click();
+            }
+            
+            // Ctrl+Y 重做
+            if (e.ctrlKey && e.key === 'y') {
+                e.preventDefault();
+                document.getElementById('redoBtn').click();
+            }
+        });
+    </script>
+</body>
+</html>
