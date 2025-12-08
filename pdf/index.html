@@ -1,0 +1,1609 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MW | PDF编辑器</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --wps-blue: #1e6fff;
+            --wps-light-blue: #e8f1ff;
+            --wps-gray: #f5f5f5;
+            --wps-dark-gray: #333;
+            --wps-border: #e0e0e0;
+            --wps-toolbar-bg: #fafafa;
+            --wps-hover: #f0f0f0;
+            --wps-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            --wps-red: #ff4757;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+        }
+        
+        body {
+            background-color: #f0f2f5;
+            color: var(--wps-dark-gray);
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        
+        .title-bar {
+            background-color: white;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 50px;
+            border-bottom: 1px solid var(--wps-border);
+            box-shadow: var(--wps-shadow);
+            z-index: 100;
+        }
+        
+        .app-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            color: var(--wps-red);
+        }
+        
+        .app-title i {
+            font-size: 20px;
+        }
+        
+        .document-title {
+            flex: 1;
+            margin: 0 20px;
+            font-size: 16px;
+            color: var(--wps-dark-gray);
+            text-align: center;
+        }
+        
+        .window-controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .window-btn {
+            background: none;
+            border: none;
+            font-size: 16px;
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            cursor: pointer;
+            color: #666;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .window-btn:hover {
+            background-color: var(--wps-hover);
+        }
+        
+        .toolbar {
+            background-color: var(--wps-toolbar-bg);
+            padding: 8px 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            border-bottom: 1px solid var(--wps-border);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            padding-right: 10px;
+            margin-right: 10px;
+            border-right: 1px solid var(--wps-border);
+        }
+        
+        .toolbar-group:last-child {
+            border-right: none;
+        }
+        
+        .toolbar-btn {
+            background: none;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #444;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: background-color 0.2s;
+        }
+        
+        .toolbar-btn:hover {
+            background-color: var(--wps-hover);
+        }
+        
+        .toolbar-btn.active {
+            background-color: var(--wps-light-blue);
+            color: var(--wps-blue);
+        }
+        
+        .toolbar-btn i {
+            font-size: 16px;
+        }
+        
+        .separator {
+            width: 1px;
+            height: 20px;
+            background-color: var(--wps-border);
+            margin: 0 5px;
+        }
+        
+        /* 文件操作栏 */
+        .file-bar {
+            background-color: white;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid var(--wps-border);
+        }
+        
+        .file-btn {
+            background-color: var(--wps-red);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.2s;
+        }
+        
+        .file-btn:hover {
+            background-color: #e84141;
+        }
+        
+        .file-btn.secondary {
+            background-color: white;
+            color: var(--wps-red);
+            border: 1px solid var(--wps-red);
+        }
+        
+        .file-btn.secondary:hover {
+            background-color: #ffeaea;
+        }
+        
+        /* 主要内容区 */
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        /* 侧边栏 */
+        .sidebar {
+            width: 240px;
+            background-color: white;
+            border-right: 1px solid var(--wps-border);
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .sidebar-section {
+            margin-bottom: 30px;
+        }
+        
+        .sidebar-section h3 {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 5px;
+            transition: background-color 0.2s;
+        }
+        
+        .sidebar-item:hover {
+            background-color: var(--wps-hover);
+        }
+        
+        .sidebar-item.active {
+            background-color: var(--wps-light-blue);
+            color: var(--wps-blue);
+        }
+        
+        .sidebar-item i {
+            font-size: 18px;
+            width: 20px;
+            text-align: center;
+        }
+        
+        /* 编辑区域 */
+        .editor-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: white;
+            overflow: hidden;
+        }
+        
+        .pdf-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #f8f9fa;
+        }
+        
+        .pdf-toolbar {
+            padding: 10px 20px;
+            background-color: white;
+            border-bottom: 1px solid var(--wps-border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .pdf-viewer {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: #525659;
+        }
+        
+        .pdf-page {
+            background-color: white;
+            box-shadow: var(--wps-shadow);
+            margin-bottom: 20px;
+        }
+        
+        .pdf-canvas {
+            display: block;
+        }
+        
+        /* PDF页数控制 */
+        .page-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .page-input {
+            width: 60px;
+            text-align: center;
+            padding: 4px;
+            border: 1px solid var(--wps-border);
+            border-radius: 4px;
+        }
+        
+        /* 状态栏 */
+        .status-bar {
+            background-color: white;
+            padding: 8px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-top: 1px solid var(--wps-border);
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        /* 模态框 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .modal {
+            background-color: white;
+            border-radius: 8px;
+            width: 500px;
+            max-width: 90%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+        
+        .modal-header {
+            padding: 20px;
+            background-color: var(--wps-red);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .modal-header h3 {
+            font-weight: 500;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .modal-footer {
+            padding: 15px 20px;
+            background-color: var(--wps-gray);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--wps-border);
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            margin-top: 10px;
+        }
+        
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        /* 文件类型选项 */
+        .file-type-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .file-type-option {
+            border: 2px solid var(--wps-border);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .file-type-option:hover {
+            border-color: var(--wps-red);
+            background-color: #ffeaea;
+        }
+        
+        .file-type-option.selected {
+            border-color: var(--wps-red);
+            background-color: #ffeaea;
+        }
+        
+        .file-type-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+            color: var(--wps-red);
+        }
+        
+        /* 消息提示 */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #4caf50;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 4px;
+            box-shadow: var(--wps-shadow);
+            display: none;
+            align-items: center;
+            gap: 10px;
+            z-index: 1001;
+        }
+        
+        .toast.error {
+            background-color: #f44336;
+        }
+        
+        .toast.warning {
+            background-color: #ff9800;
+        }
+        
+        /* PDF页面缩略图 */
+        .pdf-thumbnails {
+            width: 200px;
+            background-color: white;
+            border-left: 1px solid var(--wps-border);
+            overflow-y: auto;
+            padding: 10px;
+        }
+        
+        .thumbnail {
+            margin-bottom: 10px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .thumbnail.active {
+            border-color: var(--wps-red);
+        }
+        
+        .thumbnail canvas {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 1200px) {
+            .sidebar {
+                width: 200px;
+            }
+            
+            .pdf-thumbnails {
+                width: 150px;
+            }
+        }
+        
+        @media (max-width: 992px) {
+            .sidebar {
+                display: none;
+            }
+            
+            .pdf-thumbnails {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .toolbar {
+                overflow-x: auto;
+            }
+            
+            .toolbar-group {
+                flex-shrink: 0;
+            }
+            
+            .pdf-viewer {
+                padding: 10px;
+            }
+        }
+        
+        /* 加载动画 */
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: white;
+            font-size: 18px;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-bottom: 15px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* 注释工具 */
+        .annotation-tools {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: white;
+            border-radius: 4px;
+            box-shadow: var(--wps-shadow);
+            padding: 10px;
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            z-index: 100;
+        }
+        
+        .annotation-btn {
+            padding: 8px 12px;
+            background-color: white;
+            border: 1px solid var(--wps-border);
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .annotation-btn:hover {
+            background-color: var(--wps-hover);
+        }
+        
+        .annotation-btn.active {
+            background-color: var(--wps-light-blue);
+            border-color: var(--wps-blue);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 顶部标题栏 -->
+        <div class="title-bar">
+            <div class="app-title">
+                <i class="fas fa-file-pdf"></i>
+                <span>PDF编辑器</span>
+            </div>
+            <div class="document-title" id="documentTitle">未命名PDF</div>
+            <div class="window-controls">
+                <button class="window-btn" id="minimizeBtn"><i class="fas fa-minus"></i></button>
+                <button class="window-btn" id="maximizeBtn"><i class="fas fa-square"></i></button>
+                <button class="window-btn" id="closeBtn"><i class="fas fa-times"></i></button>
+            </div>
+        </div>
+        
+        <!-- 顶部工具栏 -->
+        <div class="toolbar">
+            <div class="toolbar-group">
+                <button class="toolbar-btn" id="fileMenuBtn">
+                    <i class="fas fa-file"></i>
+                    <span>文件</span>
+                </button>
+                <button class="toolbar-btn" id="viewMenuBtn">
+                    <i class="fas fa-eye"></i>
+                    <span>视图</span>
+                </button>
+                <button class="toolbar-btn" id="editMenuBtn">
+                    <i class="fas fa-edit"></i>
+                    <span>编辑</span>
+                </button>
+            </div>
+            
+            <div class="separator"></div>
+            
+            <div class="toolbar-group">
+                <button class="toolbar-btn" id="zoomInBtn" title="放大">
+                    <i class="fas fa-search-plus"></i>
+                </button>
+                <button class="toolbar-btn" id="zoomOutBtn" title="缩小">
+                    <i class="fas fa-search-minus"></i>
+                </button>
+                <button class="toolbar-btn" id="fitWidthBtn" title="适合宽度">
+                    <i class="fas fa-arrows-alt-h"></i>
+                </button>
+                <button class="toolbar-btn" id="fitPageBtn" title="适合页面">
+                    <i class="fas fa-expand-alt"></i>
+                </button>
+            </div>
+            
+            <div class="separator"></div>
+            
+            <div class="toolbar-group">
+                <button class="toolbar-btn" id="rotateLeftBtn" title="向左旋转">
+                    <i class="fas fa-undo"></i>
+                </button>
+                <button class="toolbar-btn" id="rotateRightBtn" title="向右旋转">
+                    <i class="fas fa-redo"></i>
+                </button>
+            </div>
+            
+            <div class="separator"></div>
+            
+            <div class="toolbar-group">
+                <button class="toolbar-btn" id="textAnnotationBtn" title="文本注释">
+                    <i class="fas fa-font"></i>
+                </button>
+                <button class="toolbar-btn" id="highlightBtn" title="高亮">
+                    <i class="fas fa-highlighter"></i>
+                </button>
+                <button class="toolbar-btn" id="drawBtn" title="绘图">
+                    <i class="fas fa-pencil-alt"></i>
+                </button>
+                <button class="toolbar-btn" id="eraserBtn" title="橡皮擦">
+                    <i class="fas fa-eraser"></i>
+                </button>
+            </div>
+            
+            <div class="separator"></div>
+            
+            <div class="toolbar-group">
+                <button class="toolbar-btn" id="prevPageBtn" title="上一页">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <span id="currentPage">1</span>
+                <span>/</span>
+                <span id="totalPages">1</span>
+                <button class="toolbar-btn" id="nextPageBtn" title="下一页">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- 文件操作栏 -->
+        <div class="file-bar">
+            <button class="file-btn" id="newPdfBtn">
+                <i class="fas fa-file-pdf"></i>
+                新建PDF
+            </button>
+            <button class="file-btn secondary" id="openPdfBtn">
+                <i class="fas fa-folder-open"></i>
+                打开
+            </button>
+            <input type="file" id="fileInput" accept=".pdf,.doc,.docx" style="display: none;">
+            <button class="file-btn secondary" id="savePdfBtn">
+                <i class="fas fa-save"></i>
+                保存为PDF
+            </button>
+            <button class="file-btn secondary" id="exportPdfBtn">
+                <i class="fas fa-download"></i>
+                导出PDF
+            </button>
+            <div style="flex: 1;"></div>
+            <button class="file-btn" id="printBtn">
+                <i class="fas fa-print"></i>
+                打印
+            </button>
+        </div>
+        
+        <!-- 主要内容区 -->
+        <div class="main-content">
+            <!-- 侧边栏 -->
+            <div class="sidebar">
+                <div class="sidebar-section">
+                    <h3>PDF操作</h3>
+                    <div class="sidebar-item active" id="sidebarHome">
+                        <i class="fas fa-home"></i>
+                        <span>PDF首页</span>
+                    </div>
+                    <div class="sidebar-item" id="sidebarRecent">
+                        <i class="fas fa-history"></i>
+                        <span>最近使用</span>
+                    </div>
+                    <div class="sidebar-item" id="sidebarProperties">
+                        <i class="fas fa-info-circle"></i>
+                        <span>PDF属性</span>
+                    </div>
+                </div>
+                
+                <div class="sidebar-section">
+                    <h3>页面管理</h3>
+                    <div class="sidebar-item">
+                        <i class="fas fa-plus"></i>
+                        <span>添加页面</span>
+                    </div>
+                    <div class="sidebar-item">
+                        <i class="fas fa-minus"></i>
+                        <span>删除页面</span>
+                    </div>
+                    <div class="sidebar-item">
+                        <i class="fas fa-exchange-alt"></i>
+                        <span>重新排序</span>
+                    </div>
+                </div>
+                
+                <div class="sidebar-section">
+                    <h3>注释工具</h3>
+                    <div class="sidebar-item">
+                        <i class="fas fa-font"></i>
+                        <span>文本注释</span>
+                    </div>
+                    <div class="sidebar-item">
+                        <i class="fas fa-highlighter"></i>
+                        <span>高亮标记</span>
+                    </div>
+                    <div class="sidebar-item">
+                        <i class="fas fa-pencil-alt"></i>
+                        <span>自由绘图</span>
+                    </div>
+                    <div class="sidebar-item">
+                        <i class="fas fa-shapes"></i>
+                        <span>形状工具</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- PDF编辑区域 -->
+            <div class="editor-container">
+                <div class="pdf-toolbar">
+                    <div class="page-controls">
+                        <span>页面:</span>
+                        <input type="number" class="page-input" id="pageInput" min="1" value="1">
+                        <span id="pageCountDisplay">/ 1</span>
+                    </div>
+                    <div style="flex: 1;"></div>
+                    <span id="zoomLevel">100%</span>
+                </div>
+                
+                <div class="pdf-container">
+                    <div class="pdf-viewer" id="pdfViewer">
+                        <div class="loading" id="loadingIndicator">
+                            <div class="spinner"></div>
+                            <span>正在加载PDF...</span>
+                        </div>
+                        <!-- PDF页面将在这里渲染 -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 缩略图侧边栏 -->
+            <div class="pdf-thumbnails" id="pdfThumbnails">
+                <!-- 缩略图将在这里生成 -->
+            </div>
+        </div>
+        
+        <!-- 状态栏 -->
+        <div class="status-bar">
+            <div class="status-item">
+                <i class="fas fa-file-pdf"></i>
+                <span>PDF编辑器</span>
+            </div>
+            <div class="status-item">
+                <i class="fas fa-layer-group"></i>
+                <span>页面: <span id="statusPage">1</span>/<span id="statusTotalPages">1</span></span>
+            </div>
+            <div class="status-item">
+                <i class="fas fa-ruler-combined"></i>
+                <span>缩放: <span id="statusZoom">100%</span></span>
+            </div>
+            <div class="status-item">
+                <i class="fas fa-clock"></i>
+                <span>就绪</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 新建PDF模态框 -->
+    <div class="modal-overlay" id="newPdfModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>新建PDF</h3>
+                <button class="modal-close" id="closeNewModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>PDF名称</label>
+                    <input type="text" class="form-control" id="newPdfName" placeholder="请输入PDF名称" value="未命名PDF">
+                </div>
+                <div class="form-group">
+                    <label>页面尺寸</label>
+                    <select class="form-control" id="pageSize">
+                        <option value="A4">A4 (210 × 297 mm)</option>
+                        <option value="Letter">Letter (8.5 × 11 英寸)</option>
+                        <option value="Legal">Legal (8.5 × 14 英寸)</option>
+                        <option value="A3">A3 (297 × 420 mm)</option>
+                        <option value="A5">A5 (148 × 210 mm)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>页面方向</label>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="portrait" name="orientation" value="portrait" checked>
+                            <label for="portrait">纵向</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="landscape" name="orientation" value="landscape">
+                            <label for="landscape">横向</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>初始页面数</label>
+                    <input type="number" class="form-control" id="pageCount" min="1" max="100" value="1">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="file-btn secondary" id="cancelNewPdf">取消</button>
+                <button class="file-btn" id="createNewPdf">创建</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 打开文件模态框 -->
+    <div class="modal-overlay" id="openPdfModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>打开文件</h3>
+                <button class="modal-close" id="closeOpenModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>选择文件</label>
+                    <input type="file" class="form-control" id="openFileInput" accept=".pdf,.doc,.docx">
+                </div>
+                <div class="form-group">
+                    <p style="font-size: 14px; color: #666; margin-top: 10px;">
+                        <i class="fas fa-info-circle"></i>
+                        支持打开 .pdf, .doc, .docx 格式的文件
+                    </p>
+                </div>
+                <div class="form-group">
+                    <label>转换选项</label>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="convertPdf" name="convertOption" value="pdf" checked>
+                            <label for="convertPdf">直接打开PDF</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="convertToPdf" name="convertOption" value="convert">
+                            <label for="convertToPdf">转换为PDF格式</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="file-btn secondary" id="cancelOpenPdf">取消</button>
+                <button class="file-btn" id="confirmOpenPdf">打开</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 导出PDF模态框 -->
+    <div class="modal-overlay" id="exportPdfModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>导出PDF</h3>
+                <button class="modal-close" id="closeExportModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>文件名</label>
+                    <input type="text" class="form-control" id="exportFileName" placeholder="请输入文件名" value="导出的文档">
+                </div>
+                <div class="form-group">
+                    <label>导出选项</label>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="exportAll" name="exportRange" value="all" checked>
+                            <label for="exportAll">所有页面</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="exportCurrent" name="exportRange" value="current">
+                            <label for="exportCurrent">当前页面</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="exportRange" name="exportRange" value="range">
+                            <label for="exportRange">页面范围</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group" id="pageRangeGroup" style="display: none;">
+                    <label>页面范围</label>
+                    <input type="text" class="form-control" id="pageRange" placeholder="例如: 1-5, 7, 9-12">
+                </div>
+                <div class="form-group">
+                    <label>导出质量</label>
+                    <select class="form-control" id="exportQuality">
+                        <option value="high">高质量</option>
+                        <option value="medium" selected>中等质量</option>
+                        <option value="low">较低质量(文件较小)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="file-btn secondary" id="cancelExportPdf">取消</button>
+                <button class="file-btn" id="confirmExportPdf">导出</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 注释工具面板 -->
+    <div class="annotation-tools" id="annotationTools">
+        <button class="annotation-btn" id="annotationText">
+            <i class="fas fa-font"></i>
+            文本
+        </button>
+        <button class="annotation-btn" id="annotationHighlight">
+            <i class="fas fa-highlighter"></i>
+            高亮
+        </button>
+        <button class="annotation-btn" id="annotationDraw">
+            <i class="fas fa-pencil-alt"></i>
+            绘图
+        </button>
+        <button class="annotation-btn" id="annotationRectangle">
+            <i class="fas fa-square"></i>
+            矩形
+        </button>
+        <button class="annotation-btn" id="annotationCircle">
+            <i class="fas fa-circle"></i>
+            圆形
+        </button>
+        <button class="annotation-btn" id="annotationLine">
+            <i class="fas fa-minus"></i>
+            线条
+        </button>
+    </div>
+    
+    <!-- 消息提示 -->
+    <div class="toast" id="toast">
+        <i class="fas fa-check-circle"></i>
+        <span id="toastMessage">操作成功</span>
+    </div>
+
+    <!-- 引入必要的库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js.map"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.5.1/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    
+    <script>
+        // 全局变量
+        let pdfDoc = null;
+        let currentPage = 1;
+        let totalPages = 1;
+        let scale = 1.0;
+        let isLoaded = false;
+        let currentDocument = {
+            name: '未命名PDF',
+            type: 'pdf',
+            lastModified: new Date(),
+            fileSize: 0
+        };
+        
+        // 元素引用
+        const documentTitle = document.getElementById('documentTitle');
+        const pdfViewer = document.getElementById('pdfViewer');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const currentPageElement = document.getElementById('currentPage');
+        const totalPagesElement = document.getElementById('totalPages');
+        const pageInput = document.getElementById('pageInput');
+        const pageCountDisplay = document.getElementById('pageCountDisplay');
+        const zoomLevel = document.getElementById('zoomLevel');
+        const pdfThumbnails = document.getElementById('pdfThumbnails');
+        const statusPage = document.getElementById('statusPage');
+        const statusTotalPages = document.getElementById('statusTotalPages');
+        const statusZoom = document.getElementById('statusZoom');
+        
+        // 模态框元素
+        const newPdfModal = document.getElementById('newPdfModal');
+        const openPdfModal = document.getElementById('openPdfModal');
+        const exportPdfModal = document.getElementById('exportPdfModal');
+        
+        // 显示消息提示
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            toastMessage.textContent = message;
+            toast.className = 'toast';
+            toast.classList.add(type);
+            toast.style.display = 'flex';
+            
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+        
+        // 显示/隐藏加载指示器
+        function showLoading() {
+            loadingIndicator.style.display = 'flex';
+        }
+        
+        function hideLoading() {
+            loadingIndicator.style.display = 'none';
+        }
+        
+        // 渲染PDF页面
+        async function renderPage(pageNum) {
+            if (!pdfDoc) return;
+            
+            try {
+                const page = await pdfDoc.getPage(pageNum);
+                const viewport = page.getViewport({ scale: scale });
+                
+                // 创建canvas元素
+                const canvas = document.createElement('canvas');
+                canvas.className = 'pdf-canvas';
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                
+                // 渲染PDF页面到canvas
+                const renderContext = {
+                    canvasContext: context,
+                    viewport: viewport
+                };
+                
+                await page.render(renderContext).promise;
+                
+                // 清空PDF查看器并添加新页面
+                pdfViewer.innerHTML = '';
+                const pageContainer = document.createElement('div');
+                pageContainer.className = 'pdf-page';
+                pageContainer.appendChild(canvas);
+                pdfViewer.appendChild(pageContainer);
+                
+                // 更新页面信息
+                currentPage = pageNum;
+                currentPageElement.textContent = pageNum;
+                pageInput.value = pageNum;
+                statusPage.textContent = pageNum;
+                
+                // 生成缩略图
+                generateThumbnails();
+                
+            } catch (error) {
+                console.error('渲染页面错误:', error);
+                showToast('渲染页面时出错', 'error');
+            }
+        }
+        
+        // 生成缩略图
+        async function generateThumbnails() {
+            if (!pdfDoc || totalPages > 50) return; // 限制缩略图数量
+            
+            pdfThumbnails.innerHTML = '';
+            
+            for (let i = 1; i <= totalPages; i++) {
+                try {
+                    const page = await pdfDoc.getPage(i);
+                    const thumbnailViewport = page.getViewport({ scale: 0.15 });
+                    
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = thumbnailViewport.height;
+                    canvas.width = thumbnailViewport.width;
+                    
+                    const renderContext = {
+                        canvasContext: context,
+                        viewport: thumbnailViewport
+                    };
+                    
+                    await page.render(renderContext).promise;
+                    
+                    const thumbnail = document.createElement('div');
+                    thumbnail.className = 'thumbnail';
+                    if (i === currentPage) {
+                        thumbnail.classList.add('active');
+                    }
+                    
+                    thumbnail.addEventListener('click', () => {
+                        goToPage(i);
+                    });
+                    
+                    thumbnail.appendChild(canvas);
+                    pdfThumbnails.appendChild(thumbnail);
+                    
+                } catch (error) {
+                    console.error('生成缩略图错误:', error);
+                }
+            }
+        }
+        
+        // 加载PDF文件
+        async function loadPdf(url) {
+            showLoading();
+            
+            try {
+                // 设置pdf.js工作路径
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                
+                // 加载PDF文档
+                pdfDoc = await pdfjsLib.getDocument(url).promise;
+                totalPages = pdfDoc.numPages;
+                totalPagesElement.textContent = totalPages;
+                pageCountDisplay.textContent = `/ ${totalPages}`;
+                statusTotalPages.textContent = totalPages;
+                
+                // 渲染第一页
+                await renderPage(1);
+                
+                isLoaded = true;
+                hideLoading();
+                showToast('PDF加载成功');
+                
+            } catch (error) {
+                console.error('加载PDF错误:', error);
+                hideLoading();
+                showToast('加载PDF时出错: ' + error.message, 'error');
+            }
+        }
+        
+        // 加载本地PDF文件
+        async function loadLocalPdf(file) {
+            showLoading();
+            
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                currentDocument.name = file.name.replace(/\.[^/.]+$/, "");
+                currentDocument.fileSize = file.size;
+                documentTitle.textContent = currentDocument.name;
+                
+                await loadPdf(arrayBuffer);
+                
+            } catch (error) {
+                console.error('加载本地PDF错误:', error);
+                hideLoading();
+                showToast('加载文件时出错: ' + error.message, 'error');
+            }
+        }
+        
+        // 跳转到指定页面
+        function goToPage(pageNum) {
+            if (pageNum < 1) pageNum = 1;
+            if (pageNum > totalPages) pageNum = totalPages;
+            
+            renderPage(pageNum);
+        }
+        
+        // 缩放PDF
+        function zoomPdf(newScale) {
+            scale = newScale;
+            zoomLevel.textContent = `${Math.round(scale * 100)}%`;
+            statusZoom.textContent = `${Math.round(scale * 100)}%`;
+            
+            if (pdfDoc) {
+                renderPage(currentPage);
+            }
+        }
+        
+        // 创建新的空白PDF
+        function createBlankPdf(options) {
+            // 创建一个简单的空白PDF表示
+            showLoading();
+            
+            setTimeout(() => {
+                // 模拟PDF创建
+                const canvas = document.createElement('canvas');
+                canvas.width = 794; // A4宽度
+                canvas.height = 1123; // A4高度
+                const ctx = canvas.getContext('2d');
+                
+                // 绘制白色背景
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // 绘制标题
+                ctx.fillStyle = '#333';
+                ctx.font = 'bold 24px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(options.name || '空白PDF', canvas.width / 2, 100);
+                
+                // 绘制说明
+                ctx.font = '16px Arial';
+                ctx.fillText('这是一个新创建的PDF文档', canvas.width / 2, 150);
+                ctx.fillText('使用PDF编辑器添加您的内容', canvas.width / 2, 180);
+                
+                // 显示Canvas
+                pdfViewer.innerHTML = '';
+                const pageContainer = document.createElement('div');
+                pageContainer.className = 'pdf-page';
+                pageContainer.appendChild(canvas);
+                pdfViewer.appendChild(pageContainer);
+                
+                // 更新文档信息
+                currentDocument.name = options.name || '未命名PDF';
+                documentTitle.textContent = currentDocument.name;
+                totalPages = 1;
+                totalPagesElement.textContent = totalPages;
+                pageCountDisplay.textContent = `/ ${totalPages}`;
+                statusTotalPages.textContent = totalPages;
+                
+                hideLoading();
+                showToast('新PDF创建成功');
+                
+            }, 1000);
+        }
+        
+        // 转换Word文档为PDF
+        async function convertWordToPdf(file) {
+            showLoading();
+            
+            try {
+                if (file.name.endsWith('.docx')) {
+                    // 使用Mammoth转换docx为HTML
+                    const arrayBuffer = await file.arrayBuffer();
+                    const result = await mammoth.convertToHtml({arrayBuffer: arrayBuffer});
+                    
+                    // 创建PDF
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF();
+                    
+                    // 设置字体
+                    doc.setFont("helvetica");
+                    doc.setFontSize(12);
+                    
+                    // 处理HTML内容
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = result.value;
+                    const text = tempDiv.textContent || tempDiv.innerText || '';
+                    
+                    // 分割文本以适应PDF页面
+                    const lines = doc.splitTextToSize(text, 180);
+                    
+                    // 添加文本到PDF
+                    doc.text(lines, 10, 20);
+                    
+                    // 获取PDF数据URL
+                    const pdfDataUrl = doc.output('dataurlstring');
+                    
+                    // 加载生成的PDF
+                    await loadPdf(pdfDataUrl);
+                    
+                    currentDocument.name = file.name.replace(/\.[^/.]+$/, "");
+                    documentTitle.textContent = currentDocument.name;
+                    
+                    showToast('Word文档已转换为PDF');
+                    
+                } else if (file.name.endsWith('.doc')) {
+                    // 对于旧版.doc文件，显示提示
+                    showToast('.doc文件需要转换为.docx格式才能处理', 'warning');
+                    
+                    // 创建一个简单的PDF表示
+                    createBlankPdf({ name: file.name.replace(/\.[^/.]+$/, "") });
+                }
+                
+            } catch (error) {
+                console.error('转换Word错误:', error);
+                hideLoading();
+                showToast('转换文件时出错: ' + error.message, 'error');
+            }
+        }
+        
+        // 导出为PDF
+        function exportAsPdf(options) {
+            showLoading();
+            
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                // 如果是PDF文档，直接使用原内容
+                if (pdfDoc && options.exportRange === 'all') {
+                    // 这里应该实现多页面导出
+                    // 由于复杂度，我们只导出当前页面作为示例
+                    const canvas = pdfViewer.querySelector('canvas');
+                    if (canvas) {
+                        const imgData = canvas.toDataURL('image/jpeg', 0.8);
+                        const imgWidth = 190;
+                        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                        
+                        doc.addImage(imgData, 'JPEG', 10, 10, imgWidth, imgHeight);
+                    }
+                } else {
+                    // 创建新PDF内容
+                    doc.setFont("helvetica");
+                    doc.setFontSize(16);
+                    doc.text(`PDF导出 - ${options.fileName || currentDocument.name}`, 10, 20);
+                    doc.setFontSize(12);
+                    doc.text(`导出时间: ${new Date().toLocaleString()}`, 10, 40);
+                    doc.text(`页面: ${currentPage} / ${totalPages}`, 10, 50);
+                }
+                
+                // 保存PDF文件
+                const fileName = `${options.fileName || currentDocument.name}.pdf`;
+                doc.save(fileName);
+                
+                hideLoading();
+                showToast(`PDF已导出: ${fileName}`);
+                
+            } catch (error) {
+                console.error('导出PDF错误:', error);
+                hideLoading();
+                showToast('导出PDF时出错: ' + error.message, 'error');
+            }
+        }
+        
+        // 事件监听器
+        document.getElementById('newPdfBtn').addEventListener('click', function() {
+            document.getElementById('newPdfName').value = currentDocument.name;
+            showModal(newPdfModal);
+        });
+        
+        document.getElementById('openPdfBtn').addEventListener('click', function() {
+            showModal(openPdfModal);
+        });
+        
+        document.getElementById('savePdfBtn').addEventListener('click', function() {
+            // 保存当前PDF
+            if (isLoaded) {
+                exportAsPdf({
+                    fileName: currentDocument.name,
+                    exportRange: 'all'
+                });
+            } else {
+                showToast('没有可保存的PDF文档', 'warning');
+            }
+        });
+        
+        document.getElementById('exportPdfBtn').addEventListener('click', function() {
+            document.getElementById('exportFileName').value = currentDocument.name;
+            showModal(exportPdfModal);
+        });
+        
+        document.getElementById('printBtn').addEventListener('click', function() {
+            if (isLoaded) {
+                window.print();
+            } else {
+                showToast('没有可打印的PDF文档', 'warning');
+            }
+        });
+        
+        // 页面导航
+        document.getElementById('prevPageBtn').addEventListener('click', function() {
+            if (currentPage > 1) {
+                goToPage(currentPage - 1);
+            }
+        });
+        
+        document.getElementById('nextPageBtn').addEventListener('click', function() {
+            if (currentPage < totalPages) {
+                goToPage(currentPage + 1);
+            }
+        });
+        
+        document.getElementById('pageInput').addEventListener('change', function() {
+            const pageNum = parseInt(this.value);
+            if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages) {
+                goToPage(pageNum);
+            } else {
+                this.value = currentPage;
+            }
+        });
+        
+        // 缩放控制
+        document.getElementById('zoomInBtn').addEventListener('click', function() {
+            zoomPdf(scale * 1.2);
+        });
+        
+        document.getElementById('zoomOutBtn').addEventListener('click', function() {
+            zoomPdf(scale * 0.8);
+        });
+        
+        document.getElementById('fitWidthBtn').addEventListener('click', function() {
+            zoomPdf(1.0);
+        });
+        
+        document.getElementById('fitPageBtn').addEventListener('click', function() {
+            zoomPdf(0.8);
+        });
+        
+        // 旋转控制
+        document.getElementById('rotateLeftBtn').addEventListener('click', function() {
+            showToast('向左旋转功能正在开发中', 'warning');
+        });
+        
+        document.getElementById('rotateRightBtn').addEventListener('click', function() {
+            showToast('向右旋转功能正在开发中', 'warning');
+        });
+        
+        // 注释工具
+        document.getElementById('textAnnotationBtn').addEventListener('click', function() {
+            showToast('文本注释功能正在开发中', 'warning');
+        });
+        
+        document.getElementById('highlightBtn').addEventListener('click', function() {
+            showToast('高亮功能正在开发中', 'warning');
+        });
+        
+        document.getElementById('drawBtn').addEventListener('click', function() {
+            showToast('绘图功能正在开发中', 'warning');
+        });
+        
+        document.getElementById('eraserBtn').addEventListener('click', function() {
+            showToast('橡皮擦功能正在开发中', 'warning');
+        });
+        
+        // 新建PDF模态框
+        document.getElementById('createNewPdf').addEventListener('click', function() {
+            const pdfName = document.getElementById('newPdfName').value || '未命名PDF';
+            const pageSize = document.getElementById('pageSize').value;
+            const orientation = document.querySelector('input[name="orientation"]:checked').value;
+            const pageCount = parseInt(document.getElementById('pageCount').value) || 1;
+            
+            createBlankPdf({
+                name: pdfName,
+                pageSize: pageSize,
+                orientation: orientation,
+                pageCount: pageCount
+            });
+            
+            hideModal(newPdfModal);
+        });
+        
+        document.getElementById('cancelNewPdf').addEventListener('click', function() {
+            hideModal(newPdfModal);
+        });
+        
+        document.getElementById('closeNewModal').addEventListener('click', function() {
+            hideModal(newPdfModal);
+        });
+        
+        // 打开文件模态框
+        document.getElementById('openFileInput').addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const convertOption = document.querySelector('input[name="convertOption"]:checked').value;
+            const fileExt = file.name.split('.').pop().toLowerCase();
+            
+            if (fileExt === 'pdf') {
+                // 直接打开PDF
+                await loadLocalPdf(file);
+            } else if (fileExt === 'docx' || fileExt === 'doc') {
+                // 转换Word文档为PDF
+                if (convertOption === 'convert') {
+                    await convertWordToPdf(file);
+                } else {
+                    showToast('Word文档需要转换为PDF格式才能打开', 'warning');
+                }
+            } else {
+                showToast('不支持的文件格式', 'error');
+                return;
+            }
+            
+            hideModal(openPdfModal);
+        });
+        
+        document.getElementById('confirmOpenPdf').addEventListener('click', function() {
+            document.getElementById('openFileInput').click();
+        });
+        
+        document.getElementById('cancelOpenPdf').addEventListener('click', function() {
+            hideModal(openPdfModal);
+        });
+        
+        document.getElementById('closeOpenModal').addEventListener('click', function() {
+            hideModal(openPdfModal);
+        });
+        
+        // 导出PDF模态框
+        document.getElementById('confirmExportPdf').addEventListener('click', function() {
+            const fileName = document.getElementById('exportFileName').value || currentDocument.name;
+            const exportRange = document.querySelector('input[name="exportRange"]:checked').value;
+            const exportQuality = document.getElementById('exportQuality').value;
+            
+            let pageRange = null;
+            if (exportRange === 'range') {
+                pageRange = document.getElementById('pageRange').value;
+            }
+            
+            exportAsPdf({
+                fileName: fileName,
+                exportRange: exportRange,
+                pageRange: pageRange,
+                quality: exportQuality
+            });
+            
+            hideModal(exportPdfModal);
+        });
+        
+        document.getElementById('cancelExportPdf').addEventListener('click', function() {
+            hideModal(exportPdfModal);
+        });
+        
+        document.getElementById('closeExportModal').addEventListener('click', function() {
+            hideModal(exportPdfModal);
+        });
+        
+        // 导出范围选项切换
+        document.querySelectorAll('input[name="exportRange"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const pageRangeGroup = document.getElementById('pageRangeGroup');
+                if (this.value === 'range') {
+                    pageRangeGroup.style.display = 'block';
+                } else {
+                    pageRangeGroup.style.display = 'none';
+                }
+            });
+        });
+        
+        // 侧边栏功能
+        document.querySelectorAll('.sidebar-item').forEach(item => {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.sidebar-item').forEach(i => {
+                    i.classList.remove('active');
+                });
+                this.classList.add('active');
+                
+                const id = this.id;
+                if (id === 'sidebarRecent') {
+                    showToast('最近文档功能正在开发中', 'warning');
+                } else if (id === 'sidebarProperties') {
+                    showToast('PDF属性功能正在开发中', 'warning');
+                }
+            });
+        });
+        
+        // 窗口控制按钮
+        document.getElementById('minimizeBtn').addEventListener('click', function() {
+            showToast('窗口控制功能正在开发中', 'warning');
+        });
+        
+        document.getElementById('maximizeBtn').addEventListener('click', function() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    showToast('全屏模式不可用', 'warning');
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        });
+        
+        document.getElementById('closeBtn').addEventListener('click', function() {
+            showToast('PDF编辑器已关闭', 'warning');
+        });
+        
+        // 显示/隐藏模态框
+        function showModal(modal) {
+            modal.style.display = 'flex';
+        }
+        
+        function hideModal(modal) {
+            modal.style.display = 'none';
+        }
+        
+        // 初始化加载一个示例PDF
+        window.addEventListener('load', function() {
+            // 创建一个默认的空白PDF
+            createBlankPdf({ name: '未命名PDF' });
+            
+            // 显示欢迎消息
+            setTimeout(() => {
+                showToast('欢迎使用MW PDF编辑器！支持PDF、DOC、DOCX格式');
+            }, 1500);
+        });
+    </script>
+</body>
+</html>
