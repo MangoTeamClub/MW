@@ -11,3 +11,7 @@ ppt编辑器：mw.ikun.ren/ppt
 
 pdf编辑器：mw.ikun.ren/pdf
 
+图片编辑器：mw.ikun.ren/photo
+
+动画制作器：mw.ikun.ren/film
+
