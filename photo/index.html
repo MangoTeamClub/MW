@@ -1,0 +1,3109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MW | 在线图片编辑器</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --mango-yellow: #FFC72C;
+            --mango-light-yellow: #FFF4D6;
+            --mango-dark-yellow: #E6B400;
+            --mango-gray: #f5f5f5;
+            --mango-dark-gray: #333;
+            --mango-border: #e0e0e0;
+            --mango-toolbar-bg: #fafafa;
+            --mango-hover: #f0f0f0;
+            --mango-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            --mango-active: #FFD700;
+            --mango-success: #4CAF50;
+            --mango-error: #F44336;
+            --mango-warning: #FF9800;
+            --mango-info: #2196F3;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+        }
+        
+        body {
+            background-color: #f0f2f5;
+            color: var(--mango-dark-gray);
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+        
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background: linear-gradient(135deg, #f5f7fa 0%, #f0f2f5 100%);
+        }
+        
+        .title-bar {
+            background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 60px;
+            border-bottom: 1px solid var(--mango-border);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            z-index: 100;
+            position: relative;
+        }
+        
+        .title-bar::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--mango-yellow), var(--mango-dark-yellow));
+        }
+        
+        .app-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            color: var(--mango-dark-gray);
+            font-size: 18px;
+        }
+        
+        .app-logo {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--mango-yellow), var(--mango-dark-yellow));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+            box-shadow: 0 2px 8px rgba(255, 199, 44, 0.3);
+        }
+        
+        .document-title {
+            flex: 1;
+            margin: 0 20px;
+            font-size: 16px;
+            color: var(--mango-dark-gray);
+            text-align: center;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .document-title-input {
+            background: transparent;
+            border: none;
+            font-size: 16px;
+            text-align: center;
+            color: var(--mango-dark-gray);
+            font-weight: 500;
+            max-width: 300px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        
+        .document-title-input:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+        
+        .document-title-input:focus {
+            outline: none;
+            background-color: white;
+            box-shadow: 0 0 0 2px var(--mango-yellow);
+        }
+        
+        .window-controls {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .window-btn {
+            background: none;
+            border: none;
+            font-size: 16px;
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            cursor: pointer;
+            color: #666;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            position: relative;
+        }
+        
+        .window-btn:hover {
+            background-color: var(--mango-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .window-btn:active {
+            transform: translateY(0);
+        }
+        
+        .window-btn#closeBtn:hover {
+            background-color: var(--mango-error);
+            color: white;
+        }
+        
+        /* 进度指示器 */
+        .progress-indicator {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--mango-yellow), var(--mango-dark-yellow));
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s ease;
+            z-index: 101;
+        }
+        
+        .progress-indicator.active {
+            transform: scaleX(1);
+        }
+        
+        .toolbar {
+            background-color: var(--mango-toolbar-bg);
+            padding: 10px 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            border-bottom: 1px solid var(--mango-border);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+            position: relative;
+            z-index: 99;
+        }
+        
+        .toolbar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--mango-yellow), transparent);
+        }
+        
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            padding-right: 12px;
+            margin-right: 12px;
+            border-right: 1px solid var(--mango-border);
+            position: relative;
+        }
+        
+        .toolbar-group:last-child {
+            border-right: none;
+        }
+        
+        .toolbar-btn {
+            background: none;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #444;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .toolbar-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s;
+        }
+        
+        .toolbar-btn:hover::before {
+            left: 100%;
+        }
+        
+        .toolbar-btn:hover {
+            background-color: var(--mango-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .toolbar-btn.active {
+            background-color: var(--mango-light-yellow);
+            color: var(--mango-dark-yellow);
+            box-shadow: inset 0 0 0 1px var(--mango-yellow);
+        }
+        
+        .toolbar-btn i {
+            font-size: 16px;
+        }
+        
+        .toolbar-btn-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 18px;
+            height: 18px;
+            background-color: var(--mango-error);
+            color: white;
+            border-radius: 50%;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .separator {
+            width: 1px;
+            height: 24px;
+            background-color: var(--mango-border);
+            margin: 0 6px;
+        }
+        
+        /* 文件操作栏 */
+        .file-bar {
+            background-color: white;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid var(--mango-border);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        
+        .file-btn {
+            background: linear-gradient(135deg, var(--mango-yellow), var(--mango-dark-yellow));
+            color: #333;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .file-btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .file-btn:hover::after {
+            left: 100%;
+        }
+        
+        .file-btn:hover {
+            background: linear-gradient(135deg, var(--mango-dark-yellow), var(--mango-yellow));
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 199, 44, 0.3);
+        }
+        
+        .file-btn:active {
+            transform: translateY(0);
+        }
+        
+        .file-btn.secondary {
+            background: white;
+            color: var(--mango-yellow);
+            border: 2px solid var(--mango-yellow);
+        }
+        
+        .file-btn.secondary:hover {
+            background-color: var(--mango-light-yellow);
+            box-shadow: 0 4px 12px rgba(255, 199, 44, 0.2);
+        }
+        
+        .file-btn.secondary::after {
+            background: linear-gradient(90deg, transparent, rgba(255, 199, 44, 0.1), transparent);
+        }
+        
+        .file-btn-group {
+            display: flex;
+            align-items: center;
+            border: 2px solid var(--mango-yellow);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .file-btn-group .file-btn {
+            border-radius: 0;
+            border: none;
+            border-right: 1px solid rgba(255, 199, 44, 0.3);
+        }
+        
+        .file-btn-group .file-btn:last-child {
+            border-right: none;
+        }
+        
+        .file-btn-group .file-btn:hover {
+            background: linear-gradient(135deg, var(--mango-dark-yellow), var(--mango-yellow));
+        }
+        
+        /* 主要内容区 */
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        /* 侧边栏 */
+        .sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, #ffffff 0%, #fcfcfc 100%);
+            border-right: 1px solid var(--mango-border);
+            padding: 20px;
+            overflow-y: auto;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
+        }
+        
+        .sidebar.collapsed {
+            transform: translateX(-100%);
+            position: absolute;
+            height: calc(100vh - 190px);
+            z-index: 10;
+        }
+        
+        .sidebar-toggle {
+            position: absolute;
+            right: -15px;
+            top: 20px;
+            background-color: white;
+            border: 1px solid var(--mango-border);
+            width: 15px;
+            height: 40px;
+            border-radius: 0 4px 4px 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .sidebar-section {
+            margin-bottom: 30px;
+        }
+        
+        .sidebar-section h3 {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .sidebar-section-count {
+            background-color: var(--mango-yellow);
+            color: #333;
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 6px;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .sidebar-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 4px;
+            height: 100%;
+            background-color: var(--mango-yellow);
+            transition: left 0.3s;
+        }
+        
+        .sidebar-item:hover {
+            background-color: var(--mango-hover);
+            transform: translateX(4px);
+        }
+        
+        .sidebar-item:hover::before {
+            left: 0;
+        }
+        
+        .sidebar-item.active {
+            background-color: var(--mango-light-yellow);
+            color: var(--mango-dark-yellow);
+            transform: translateX(4px);
+        }
+        
+        .sidebar-item.active::before {
+            left: 0;
+        }
+        
+        .sidebar-item i {
+            font-size: 18px;
+            width: 24px;
+            text-align: center;
+        }
+        
+        .sidebar-item-badge {
+            margin-left: auto;
+            background-color: var(--mango-yellow);
+            color: #333;
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        
+        /* 编辑区域 */
+        .editor-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #f8f9fa;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .editor-header {
+            padding: 15px 20px;
+            background-color: white;
+            border-bottom: 1px solid var(--mango-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        
+        .editor-header-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--mango-dark-gray);
+        }
+        
+        .editor-header-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .image-container {
+            flex: 1;
+            padding: 20px;
+            overflow: auto;
+            background: 
+                radial-gradient(circle at 25% 25%, rgba(255, 199, 44, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(255, 199, 44, 0.05) 0%, transparent 50%),
+                linear-gradient(135deg, #f8f9fa 0%, #f0f2f5 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        
+        .image-wrapper {
+            position: relative;
+            box-shadow: 
+                0 8px 30px rgba(0, 0, 0, 0.12),
+                0 0 0 1px rgba(0, 0, 0, 0.05),
+                inset 0 0 30px rgba(255, 199, 44, 0.1);
+            background-color: white;
+            overflow: hidden;
+            display: inline-block;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+        
+        .image-wrapper:hover {
+            box-shadow: 
+                0 12px 40px rgba(0, 0, 0, 0.15),
+                0 0 0 1px rgba(0, 0, 0, 0.05),
+                inset 0 0 40px rgba(255, 199, 44, 0.15);
+        }
+        
+        #imageCanvas {
+            display: block;
+            max-width: 100%;
+            max-height: 70vh;
+            background-color: white;
+            cursor: default;
+        }
+        
+        .canvas-controls {
+            position: absolute;
+            bottom: 15px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            z-index: 5;
+        }
+        
+        .canvas-btn {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.85));
+            border: 1px solid rgba(255, 199, 44, 0.3);
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 
+                0 4px 12px rgba(0, 0, 0, 0.1),
+                0 0 0 1px rgba(255, 199, 44, 0.1);
+            backdrop-filter: blur(10px);
+            transition: all 0.2s;
+        }
+        
+        .canvas-btn:hover {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0.9));
+            transform: translateY(-2px);
+            box-shadow: 
+                0 6px 16px rgba(0, 0, 0, 0.15),
+                0 0 0 1px rgba(255, 199, 44, 0.2);
+        }
+        
+        .canvas-btn:active {
+            transform: translateY(0);
+        }
+        
+        /* 控制面板 */
+        .control-panel {
+            background: linear-gradient(180deg, #ffffff 0%, #fcfcfc 100%);
+            padding: 20px;
+            border-top: 1px solid var(--mango-border);
+            box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+            display: none;
+            overflow-y: auto;
+            max-height: 250px;
+            animation: slideUp 0.3s ease;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .control-panel.active {
+            display: block;
+        }
+        
+        .control-group {
+            margin-bottom: 20px;
+        }
+        
+        .control-group h4 {
+            font-size: 14px;
+            margin-bottom: 10px;
+            color: #555;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .control-group-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .control-group-value {
+            font-size: 12px;
+            color: var(--mango-yellow);
+            background-color: var(--mango-light-yellow);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        
+        .control-slider {
+            width: 100%;
+            height: 8px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: linear-gradient(90deg, #ddd, var(--mango-light-yellow));
+            border-radius: 4px;
+            outline: none;
+            position: relative;
+        }
+        
+        .control-slider::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--mango-yellow), var(--mango-dark-yellow));
+            border-radius: 4px;
+            transform: scaleX(0.5);
+            transform-origin: left;
+        }
+        
+        .control-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: white;
+            border: 2px solid var(--mango-yellow);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s;
+        }
+        
+        .control-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        .control-value {
+            font-size: 12px;
+            color: #777;
+            text-align: center;
+            margin-top: 6px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .control-value-min,
+        .control-value-max {
+            color: #aaa;
+        }
+        
+        .control-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .control-option {
+            padding: 10px 14px;
+            border: 2px solid var(--mango-border);
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            font-size: 13px;
+            transition: all 0.2s;
+            flex: 1;
+            min-width: 80px;
+        }
+        
+        .control-option:hover {
+            border-color: var(--mango-yellow);
+            background-color: var(--mango-light-yellow);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(255, 199, 44, 0.2);
+        }
+        
+        .control-option.active {
+            border-color: var(--mango-yellow);
+            background-color: var(--mango-light-yellow);
+            color: var(--mango-dark-yellow);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 199, 44, 0.3);
+        }
+        
+        .color-picker {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .color-swatch {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            border: 2px solid var(--mango-border);
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .color-swatch::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, transparent 48%, rgba(0, 0, 0, 0.1) 50%, transparent 52%);
+        }
+        
+        .color-swatch:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .color-swatch.active {
+            border-color: var(--mango-yellow);
+            box-shadow: 0 0 0 3px var(--mango-light-yellow), 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* 状态栏 */
+        .status-bar {
+            background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-top: 1px solid var(--mango-border);
+            font-size: 13px;
+            color: #666;
+            box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        
+        .status-item:hover {
+            background-color: var(--mango-hover);
+        }
+        
+        .status-item i {
+            color: var(--mango-yellow);
+        }
+        
+        .status-item-progress {
+            width: 100px;
+            height: 4px;
+            background-color: #eee;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .status-item-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--mango-yellow), var(--mango-dark-yellow));
+            border-radius: 2px;
+            transition: width 0.3s;
+        }
+        
+        /* 模态框 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .modal {
+            background-color: white;
+            border-radius: 16px;
+            width: 600px;
+            max-width: 90%;
+            max-height: 80vh;
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            animation: modalSlideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        @keyframes modalSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        .modal-header {
+            padding: 24px;
+            background: linear-gradient(135deg, var(--mango-yellow), var(--mango-dark-yellow));
+            color: #333;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .modal-header h3 {
+            font-weight: 600;
+            font-size: 20px;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            color: #333;
+            font-size: 24px;
+            cursor: pointer;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        
+        .modal-close:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+            transform: rotate(90deg);
+        }
+        
+        .modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        
+        .modal-footer {
+            padding: 20px 24px;
+            background-color: var(--mango-gray);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+        
+        .form-group {
+            margin-bottom: 24px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 500;
+            color: #555;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--mango-border);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s;
+            background-color: white;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--mango-yellow);
+            box-shadow: 0 0 0 3px var(--mango-light-yellow);
+        }
+        
+        /* 消息提示 */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: linear-gradient(135deg, var(--mango-success), #3d8b40);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: 
+                0 10px 30px rgba(0, 0, 0, 0.2),
+                0 0 0 1px rgba(255, 255, 255, 0.1);
+            display: none;
+            align-items: center;
+            gap: 12px;
+            z-index: 2001;
+            animation: toastSlideIn 0.3s ease;
+            max-width: 400px;
+            backdrop-filter: blur(10px);
+        }
+        
+        @keyframes toastSlideIn {
+            from {
+                opacity: 0;
+                transform: translateX(100px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .toast.error {
+            background: linear-gradient(135deg, var(--mango-error), #d32f2f);
+        }
+        
+        .toast.warning {
+            background: linear-gradient(135deg, var(--mango-yellow), var(--mango-dark-yellow));
+            color: #333;
+        }
+        
+        .toast.info {
+            background: linear-gradient(135deg, var(--mango-info), #1976d2);
+        }
+        
+        .toast i {
+            font-size: 20px;
+        }
+        
+        /* 加载动画 */
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+        
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid var(--mango-light-yellow);
+            border-top: 4px solid var(--mango-yellow);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 空状态 */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            text-align: center;
+        }
+        
+        .empty-state-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--mango-light-yellow), var(--mango-yellow));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            font-size: 32px;
+            color: #333;
+        }
+        
+        .empty-state-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--mango-dark-gray);
+        }
+        
+        .empty-state-description {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 20px;
+            max-width: 400px;
+        }
+        
+        /* 工具提示 */
+        .tooltip {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 3000;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .tooltip.show {
+            opacity: 1;
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 1200px) {
+            .sidebar {
+                width: 240px;
+            }
+        }
+        
+        @media (max-width: 992px) {
+            .sidebar {
+                position: absolute;
+                z-index: 10;
+                height: calc(100vh - 190px);
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            
+            .sidebar-toggle {
+                display: flex;
+            }
+            
+            .toolbar-group {
+                margin-right: 8px;
+                padding-right: 8px;
+            }
+            
+            .toolbar-btn span {
+                display: none;
+            }
+            
+            .toolbar-btn {
+                padding: 8px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .toolbar {
+                overflow-x: auto;
+                padding: 10px;
+            }
+            
+            .toolbar-group {
+                flex-shrink: 0;
+            }
+            
+            .image-container {
+                padding: 10px;
+            }
+            
+            .control-options {
+                justify-content: center;
+            }
+            
+            .file-bar {
+                overflow-x: auto;
+                padding: 10px;
+            }
+            
+            .status-bar {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 10px;
+            }
+            
+            .modal {
+                width: 95%;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .title-bar {
+                padding: 0 10px;
+            }
+            
+            .app-title span {
+                display: none;
+            }
+            
+            .document-title {
+                margin: 0 10px;
+            }
+            
+            .window-btn {
+                width: 32px;
+                height: 32px;
+            }
+            
+            .control-panel {
+                padding: 15px;
+            }
+        }
+        
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--mango-yellow);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--mango-dark-yellow);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 顶部标题栏 -->
+        <div class="title-bar">
+            <div class="app-title">
+                <div class="app-logo">
+                    <i class="fas fa-image"></i>
+                </div>
+                <span>Mango图片编辑器</span>
+            </div>
+            <div class="document-title">
+                <input type="text" class="document-title-input" id="documentTitleInput" value="未命名图片" maxlength="50">
+                <i class="fas fa-edit" style="color: var(--mango-yellow); font-size: 14px;"></i>
+            </div>
+            <div class="window-controls">
+                <button class="window-btn" id="minimizeBtn" title="最小化">
+                    <i class="fas fa-minus"></i>
+                </button>
+                <button class="window-btn" id="maximizeBtn" title="全屏">
+                    <i class="fas fa-expand-alt"></i>
+                </button>
+                <button class="window-btn" id="closeBtn" title="关闭">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="progress-indicator" id="progressIndicator"></div>
+        </div>
+        
+        <!-- 顶部工具栏 -->
+        <div class="toolbar">
+            <div class="toolbar-group">
+                <button class="toolbar-btn" id="fileMenuBtn" title="文件操作">
+                    <i class="fas fa-file-image"></i>
+                    <span>文件</span>
+                </button>
+                <button class="toolbar-btn" id="adjustBtn" title="图片调整">
+                    <i class="fas fa-sliders-h"></i>
+                    <span>调整</span>
+                </button>
+                <button class="toolbar-btn" id="filterBtn" title="滤镜效果">
+                    <i class="fas fa-palette"></i>
+                    <span>滤镜</span>
+                </button>
+                <button class="toolbar-btn" id="cropBtn" title="裁剪图片">
+                    <i class="fas fa-crop"></i>
+                    <span>裁剪</span>
+                </button>
+                <button class="toolbar-btn" id="rotateBtn" title="旋转图片">
+                    <i class="fas fa-undo"></i>
+                    <span>旋转</span>
+                </button>
+            </div>
+            
+            <div class="separator"></div>
+            
+            <div class="toolbar-group">
+                <button class="toolbar-btn" id="drawBtn" title="绘制工具">
+                    <i class="fas fa-pencil-alt"></i>
+                    <span>绘制</span>
+                </button>
+                <button class="toolbar-btn" id="textBtn" title="添加文字">
+                    <i class="fas fa-font"></i>
+                    <span>文字</span>
+                </button>
+                <button class="toolbar-btn" id="collageBtn" title="图片拼图">
+                    <i class="fas fa-th-large"></i>
+                    <span>拼图</span>
+                    <div class="toolbar-btn-badge" id="collageBadge">3</div>
+                </button>
+                <button class="toolbar-btn" id="doodleBtn" title="创意涂鸦">
+                    <i class="fas fa-paint-brush"></i>
+                    <span>涂鸦</span>
+                    <div class="toolbar-btn-badge" id="doodleBadge">新</div>
+                </button>
+            </div>
+            
+            <div class="separator"></div>
+            
+            <div class="toolbar-group">
+                <button class="toolbar-btn" id="undoBtn" title="撤销 (Ctrl+Z)">
+                    <i class="fas fa-undo"></i>
+                    <span>撤销</span>
+                </button>
+                <button class="toolbar-btn" id="redoBtn" title="重做 (Ctrl+Y)">
+                    <i class="fas fa-redo"></i>
+                    <span>重做</span>
+                </button>
+                <button class="toolbar-btn" id="resetBtn" title="重置所有更改">
+                    <i class="fas fa-history"></i>
+                    <span>重置</span>
+                </button>
+            </div>
+            
+            <div class="separator"></div>
+            
+            <div class="toolbar-group">
+                <button class="toolbar-btn" id="zoomInBtn" title="放大 (Ctrl+Plus)">
+                    <i class="fas fa-search-plus"></i>
+                    <span>放大</span>
+                </button>
+                <button class="toolbar-btn" id="zoomOutBtn" title="缩小 (Ctrl+Minus)">
+                    <i class="fas fa-search-minus"></i>
+                    <span>缩小</span>
+                </button>
+                <button class="toolbar-btn" id="zoomResetBtn" title="重置缩放">
+                    <i class="fas fa-expand-alt"></i>
+                    <span>重置</span>
+                </button>
+            </div>
+            
+            <div class="separator"></div>
+            
+            <div class="toolbar-group">
+                <button class="toolbar-btn" id="sidebarToggle" title="显示/隐藏侧边栏">
+                    <i class="fas fa-bars"></i>
+                    <span>侧边栏</span>
+                </button>
+            </div>
+        </div>
+        
+        <!-- 文件操作栏 -->
+        <div class="file-bar">
+            <div class="file-btn-group">
+                <button class="file-btn" id="newImageBtn" title="新建图片 (Ctrl+N)">
+                    <i class="fas fa-plus"></i>
+                    <span>新建</span>
+                </button>
+                <button class="file-btn" id="openImageBtn" title="打开图片 (Ctrl+O)">
+                    <i class="fas fa-folder-open"></i>
+                    <span>打开</span>
+                </button>
+            </div>
+            
+            <input type="file" id="fileInput" accept=".png,.jpg,.jpeg,.webp,.bmp,.gif" style="display: none;" multiple>
+            
+            <div class="file-btn-group">
+                <button class="file-btn secondary" id="saveImageBtn" title="保存图片 (Ctrl+S)">
+                    <i class="fas fa-save"></i>
+                    <span>保存</span>
+                </button>
+                <button class="file-btn secondary" id="saveAsBtn" title="另存为图片">
+                    <i class="fas fa-download"></i>
+                    <span>另存为</span>
+                </button>
+            </div>
+            
+            <div style="flex: 1;"></div>
+            
+            <div class="file-btn-group">
+                <button class="file-btn" id="exportBtn" title="导出图片">
+                    <i class="fas fa-file-export"></i>
+                    <span>导出</span>
+                </button>
+                <button class="file-btn" id="shareBtn" title="分享图片">
+                    <i class="fas fa-share-alt"></i>
+                    <span>分享</span>
+                </button>
+                <button class="file-btn" id="printBtn" title="打印图片 (Ctrl+P)">
+                    <i class="fas fa-print"></i>
+                    <span>打印</span>
+                </button>
+            </div>
+        </div>
+        
+        <!-- 主要内容区 -->
+        <div class="main-content">
+            <!-- 侧边栏 -->
+            <div class="sidebar" id="sidebar">
+                <div class="sidebar-toggle" id="sidebarToggleBtn">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+                
+                <div class="sidebar-section">
+                    <h3>最近编辑 <span class="sidebar-section-count">3</span></h3>
+                    <div class="sidebar-item active" id="sidebarHome">
+                        <i class="fas fa-home"></i>
+                        <span>当前编辑</span>
+                        <div class="sidebar-item-badge">在线</div>
+                    </div>
+                    <div class="sidebar-item" id="sidebarRecent">
+                        <i class="fas fa-history"></i>
+                        <span>历史记录</span>
+                        <div class="sidebar-item-badge">12</div>
+                    </div>
+                    <div class="sidebar-item" id="sidebarTemplates">
+                        <i class="fas fa-layer-group"></i>
+                        <span>模板中心</span>
+                        <div class="sidebar-item-badge">新</div>
+                    </div>
+                </div>
+                
+                <div class="sidebar-section">
+                    <h3>图片信息</h3>
+                    <div class="sidebar-item" id="sidebarInfo">
+                        <i class="fas fa-info-circle"></i>
+                        <span>图片属性</span>
+                    </div>
+                    <div class="sidebar-item" id="sidebarSize">
+                        <i class="fas fa-ruler-combined"></i>
+                        <span>尺寸信息</span>
+                    </div>
+                    <div class="sidebar-item" id="sidebarStats">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>图片统计</span>
+                    </div>
+                </div>
+                
+                <div class="sidebar-section">
+                    <h3>工具设置</h3>
+                    <div class="sidebar-item" id="sidebarDrawSettings">
+                        <i class="fas fa-paint-brush"></i>
+                        <span>画笔设置</span>
+                    </div>
+                    <div class="sidebar-item" id="sidebarTextSettings">
+                        <i class="fas fa-text-height"></i>
+                        <span>文字设置</span>
+                    </div>
+                    <div class="sidebar-item" id="sidebarDoodleSettings">
+                        <i class="fas fa-star"></i>
+                        <span>涂鸦设置</span>
+                    </div>
+                    <div class="sidebar-item" id="sidebarCollageSettings">
+                        <i class="fas fa-border-all"></i>
+                        <span>拼图设置</span>
+                    </div>
+                </div>
+                
+                <div class="sidebar-section">
+                    <h3>高级功能</h3>
+                    <div class="sidebar-item" id="sidebarBatch">
+                        <i class="fas fa-images"></i>
+                        <span>批量处理</span>
+                    </div>
+                    <div class="sidebar-item" id="sidebarAi">
+                        <i class="fas fa-robot"></i>
+                        <span>AI增强</span>
+                        <div class="sidebar-item-badge">AI</div>
+                    </div>
+                    <div class="sidebar-item" id="sidebarCloud">
+                        <i class="fas fa-cloud"></i>
+                        <span>云存储</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 编辑区域 -->
+            <div class="editor-container">
+                <!-- 编辑器头部 -->
+                <div class="editor-header">
+                    <div class="editor-header-title">
+                        <i class="fas fa-edit" style="color: var(--mango-yellow); margin-right: 8px;"></i>
+                        <span id="editorTitle">图片编辑区</span>
+                    </div>
+                    <div class="editor-header-actions">
+                        <button class="canvas-btn" id="toggleGuideBtn" title="显示/隐藏操作指南">
+                            <i class="fas fa-question-circle"></i>
+                            帮助
+                        </button>
+                        <button class="canvas-btn" id="toggleFullscreenBtn" title="全屏编辑">
+                            <i class="fas fa-expand"></i>
+                            全屏
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 控制面板 -->
+                <div class="control-panel" id="adjustPanel">
+                    <!-- 调整面板内容 -->
+                </div>
+                
+                <div class="control-panel" id="filterPanel">
+                    <!-- 滤镜面板内容 -->
+                </div>
+                
+                <div class="control-panel" id="cropPanel">
+                    <!-- 裁剪面板内容 -->
+                </div>
+                
+                <div class="control-panel" id="drawPanel">
+                    <!-- 绘制面板内容 -->
+                </div>
+                
+                <div class="control-panel" id="textPanel">
+                    <!-- 文字面板内容 -->
+                </div>
+                
+                <div class="control-panel" id="collagePanel">
+                    <!-- 拼图面板内容 -->
+                </div>
+                
+                <div class="control-panel" id="doodlePanel">
+                    <!-- 涂鸦面板内容 -->
+                </div>
+                
+                <!-- 图片容器 -->
+                <div class="image-container">
+                    <!-- 加载动画 -->
+                    <div class="loading-overlay" id="loadingOverlay">
+                        <div class="loading-spinner"></div>
+                    </div>
+                    
+                    <!-- 空状态 -->
+                    <div class="empty-state" id="emptyState">
+                        <div class="empty-state-icon">
+                            <i class="fas fa-image"></i>
+                        </div>
+                        <div class="empty-state-title">开始您的创意之旅</div>
+                        <div class="empty-state-description">
+                            上传图片或创建新项目，使用丰富的编辑工具打造完美作品
+                        </div>
+                        <div class="file-btn-group">
+                            <button class="file-btn" id="uploadFirstImageBtn">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                上传图片
+                            </button>
+                            <button class="file-btn secondary" id="createFirstImageBtn">
+                                <i class="fas fa-plus"></i>
+                                新建图片
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 图片画布 -->
+                    <div class="image-wrapper" id="imageWrapper" style="display: none;">
+                        <canvas id="imageCanvas" width="800" height="600"></canvas>
+                        <canvas id="drawCanvas" width="800" height="600" style="position: absolute; top: 0; left: 0; pointer-events: none;"></canvas>
+                        <canvas id="textCanvas" width="800" height="600" style="position: absolute; top: 0; left: 0; pointer-events: none;"></canvas>
+                        <canvas id="doodleCanvas" width="800" height="600" style="position: absolute; top: 0; left: 0; pointer-events: none;"></canvas>
+                        
+                        <div class="canvas-controls">
+                            <button class="canvas-btn" id="zoomInCanvasBtn" title="放大视图">
+                                <i class="fas fa-search-plus"></i>
+                                放大
+                            </button>
+                            <button class="canvas-btn" id="zoomOutCanvasBtn" title="缩小视图">
+                                <i class="fas fa-search-minus"></i>
+                                缩小
+                            </button>
+                            <button class="canvas-btn" id="resetCanvasBtn" title="重置视图">
+                                <i class="fas fa-redo"></i>
+                                重置
+                            </button>
+                            <button class="canvas-btn" id="toggleGridBtn" title="显示/隐藏网格">
+                                <i class="fas fa-th"></i>
+                                网格
+                            </button>
+                            <button class="canvas-btn" id="toggleGuidesBtn" title="显示/隐藏参考线">
+                                <i class="fas fa-ruler-combined"></i>
+                                参考线
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 状态栏 -->
+        <div class="status-bar">
+            <div class="status-item" title="图片尺寸">
+                <i class="fas fa-ruler-combined"></i>
+                <span id="imageSize">800 × 600 px</span>
+            </div>
+            <div class="status-item" title="缩放比例">
+                <i class="fas fa-expand-alt"></i>
+                <span id="zoomLevel">100%</span>
+            </div>
+            <div class="status-item" title="文件格式">
+                <i class="fas fa-file-image"></i>
+                <span id="fileFormat">PNG</span>
+            </div>
+            <div class="status-item" title="编辑时间">
+                <i class="fas fa-clock"></i>
+                <span id="editTime">00:00</span>
+            </div>
+            <div class="status-item" title="内存使用">
+                <i class="fas fa-memory"></i>
+                <div class="status-item-progress">
+                    <div class="status-item-progress-bar" id="memoryProgress" style="width: 30%"></div>
+                </div>
+            </div>
+            <div class="status-item" title="保存状态">
+                <i class="fas fa-save" id="saveStatusIcon"></i>
+                <span id="saveStatus">已保存</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 工具提示容器 -->
+    <div class="tooltip" id="tooltip"></div>
+    
+    <!-- 新建图片模态框 -->
+    <div class="modal-overlay" id="newImageModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>新建图片</h3>
+                <button class="modal-close" id="closeNewModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>图片名称</label>
+                    <input type="text" class="form-control" id="newImageName" placeholder="请输入图片名称" value="未命名图片">
+                </div>
+                <div class="form-group">
+                    <label>图片尺寸</label>
+                    <select class="form-control" id="imageSizeSelect">
+                        <option value="800x600">800 × 600 (标准)</option>
+                        <option value="1024x768">1024 × 768 (小)</option>
+                        <option value="1920x1080">1920 × 1080 (高清)</option>
+                        <option value="2560x1440">2560 × 1440 (2K)</option>
+                        <option value="3840x2160">3840 × 2160 (4K)</option>
+                        <option value="custom">自定义尺寸</option>
+                    </select>
+                </div>
+                <div class="form-group" id="customSizeGroup" style="display: none;">
+                    <label>自定义尺寸</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="number" class="form-control" id="customWidth" placeholder="宽度" value="800" min="100" max="5000">
+                        <span style="color: #666;">×</span>
+                        <input type="number" class="form-control" id="customHeight" placeholder="高度" value="600" min="100" max="5000">
+                        <span style="color: #666;">像素</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>背景颜色</label>
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <input type="color" class="color-swatch" id="backgroundColor" value="#ffffff">
+                        <div style="display: flex; gap: 10px;">
+                            <div class="color-swatch" data-color="#ffffff" style="background-color: #ffffff;"></div>
+                            <div class="color-swatch" data-color="#f0f0f0" style="background-color: #f0f0f0;"></div>
+                            <div class="color-swatch" data-color="#000000" style="background-color: #000000;"></div>
+                            <div class="color-swatch" data-color="#ffc72c" style="background-color: #ffc72c;"></div>
+                            <div class="color-swatch" data-color="#2196f3" style="background-color: #2196f3;"></div>
+                            <div class="color-swatch active" data-color="transparent" style="background: repeating-conic-gradient(#eee 0% 25%, #fff 0% 50%) 50% / 20px 20px;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>图片模板</label>
+                    <div class="control-options">
+                        <div class="control-option active" data-template="blank">
+                            <i class="fas fa-file-alt" style="display: block; margin-bottom: 5px; font-size: 20px;"></i>
+                            空白
+                        </div>
+                        <div class="control-option" data-template="social">
+                            <i class="fas fa-share-alt" style="display: block; margin-bottom: 5px; font-size: 20px;"></i>
+                            社交媒体
+                        </div>
+                        <div class="control-option" data-template="poster">
+                            <i class="fas fa-newspaper" style="display: block; margin-bottom: 5px; font-size: 20px;"></i>
+                            海报
+                        </div>
+                        <div class="control-option" data-template="banner">
+                            <i class="fas fa-flag" style="display: block; margin-bottom: 5px; font-size: 20px;"></i>
+                            横幅
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="file-btn secondary" id="cancelNewImage">取消</button>
+                <button class="file-btn" id="createNewImage">
+                    <i class="fas fa-magic"></i>
+                    智能创建
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 保存图片模态框 -->
+    <div class="modal-overlay" id="saveImageModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>保存图片</h3>
+                <button class="modal-close" id="closeSaveModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>图片名称</label>
+                    <input type="text" class="form-control" id="saveImageName" placeholder="请输入图片名称">
+                </div>
+                <div class="form-group">
+                    <label>保存格式</label>
+                    <div class="control-options">
+                        <div class="control-option active" data-format="png">
+                            <div style="font-weight: 600;">PNG</div>
+                            <div style="font-size: 11px; color: #666;">无损质量</div>
+                        </div>
+                        <div class="control-option" data-format="jpg">
+                            <div style="font-weight: 600;">JPG</div>
+                            <div style="font-size: 11px; color: #666;">高压缩比</div>
+                        </div>
+                        <div class="control-option" data-format="webp">
+                            <div style="font-weight: 600;">WebP</div>
+                            <div style="font-size: 11px; color: #666;">现代格式</div>
+                        </div>
+                        <div class="control-option" data-format="svg">
+                            <div style="font-weight: 600;">SVG</div>
+                            <div style="font-size: 11px; color: #666;">矢量图形</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>图片质量</label>
+                    <input type="range" min="1" max="10" value="10" class="control-slider" id="qualitySlider">
+                    <div class="control-value">
+                        <span class="control-value-min">低</span>
+                        <span id="qualityValue">10/10</span>
+                        <span class="control-value-max">高</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>保存位置</label>
+                    <div class="control-options">
+                        <div class="control-option active" data-location="local">
+                            <i class="fas fa-desktop" style="display: block; margin-bottom: 5px; font-size: 20px;"></i>
+                            本地下载
+                        </div>
+                        <div class="control-option" data-location="cloud">
+                            <i class="fas fa-cloud" style="display: block; margin-bottom: 5px; font-size: 20px;"></i>
+                            云存储
+                        </div>
+                        <div class="control-option" data-location="share">
+                            <i class="fas fa-share-alt" style="display: block; margin-bottom: 5px; font-size: 20px;"></i>
+                            直接分享
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="file-btn secondary" id="cancelSaveImage">取消</button>
+                <button class="file-btn" id="confirmSaveImage">
+                    <i class="fas fa-save"></i>
+                    保存图片
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 导出图片模态框 -->
+    <div class="modal-overlay" id="exportImageModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>导出图片</h3>
+                <button class="modal-close" id="closeExportModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>导出预设</label>
+                    <div class="control-options">
+                        <div class="control-option active" data-preset="web">
+                            <i class="fas fa-globe" style="display: block; margin-bottom: 5px; font-size: 20px;"></i>
+                            网页使用
+                        </div>
+                        <div class="control-option" data-preset="print">
+                            <i class="fas fa-print" style="display: block; margin-bottom: 5px; font-size: 20px;"></i>
+                            打印使用
+                        </div>
+                        <div class="control-option" data-preset="social">
+                            <i class="fas fa-share-alt" style="display: block; margin-bottom: 5px; font-size: 20px;"></i>
+                            社交媒体
+                        </div>
+                        <div class="control-option" data-preset="custom">
+                            <i class="fas fa-cog" style="display: block; margin-bottom: 5px; font-size: 20px;"></i>
+                            自定义
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>导出尺寸</label>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                        <div class="control-option active" data-size="original">
+                            原始尺寸
+                        </div>
+                        <div class="control-option" data-size="hd">
+                            高清 (1920×1080)
+                        </div>
+                        <div class="control-option" data-size="4k">
+                            4K (3840×2160)
+                        </div>
+                        <div class="control-option" data-size="instagram">
+                            Instagram (1080×1080)
+                        </div>
+                        <div class="control-option" data-size="facebook">
+                            Facebook (1200×630)
+                        </div>
+                        <div class="control-option" data-size="twitter">
+                            Twitter (1200×675)
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>批量导出</label>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" id="batchExport" style="width: 18px; height: 18px;">
+                        <label for="batchExport">导出多个尺寸和格式</label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="file-btn secondary" id="cancelExportImage">取消</button>
+                <button class="file-btn" id="confirmExportImage">
+                    <i class="fas fa-file-export"></i>
+                    开始导出
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 分享图片模态框 -->
+    <div class="modal-overlay" id="shareImageModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>分享图片</h3>
+                <button class="modal-close" id="closeShareModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>分享链接</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" class="form-control" id="shareLink" readonly>
+                        <button class="file-btn" id="copyLinkBtn">
+                            <i class="fas fa-copy"></i>
+                            复制
+                        </button>
+                        <button class="file-btn secondary" id="generateQrBtn">
+                            <i class="fas fa-qrcode"></i>
+                            QR码
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>分享到社交媒体</label>
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px;">
+                        <button class="file-btn secondary" style="background-color: #1877f2; color: white;">
+                            <i class="fab fa-facebook-f"></i>
+                            Facebook
+                        </button>
+                        <button class="file-btn secondary" style="background-color: #1da1f2; color: white;">
+                            <i class="fab fa-twitter"></i>
+                            Twitter
+                        </button>
+                        <button class="file-btn secondary" style="background: linear-gradient(45deg, #405de6, #5851db, #833ab4, #c13584, #e1306c, #fd1d1d); color: white;">
+                            <i class="fab fa-instagram"></i>
+                            Instagram
+                        </button>
+                        <button class="file-btn secondary" style="background-color: #25d366; color: white;">
+                            <i class="fab fa-whatsapp"></i>
+                            WhatsApp
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>分享设置</label>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <span>允许下载</span>
+                            <label class="switch">
+                                <input type="checkbox" id="allowDownload" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <span>设置有效期</span>
+                            <select class="form-control" id="shareExpiry" style="width: 150px;">
+                                <option value="1">1天</option>
+                                <option value="7">7天</option>
+                                <option value="30">30天</option>
+                                <option value="0" selected>永久有效</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="file-btn secondary" id="cancelShareImage">取消</button>
+                <button class="file-btn" id="generateShareLink">
+                    <i class="fas fa-link"></i>
+                    生成分享链接
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- AI增强模态框 -->
+    <div class="modal-overlay" id="aiEnhanceModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>AI图片增强</h3>
+                <button class="modal-close" id="closeAiModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="empty-state">
+                    <div class="empty-state-icon" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="empty-state-title">AI图片增强</div>
+                    <div class="empty-state-description">
+                        使用人工智能技术自动优化您的图片质量，包括提升分辨率、修复细节、调整色彩等
+                    </div>
+                    
+                    <div class="control-group">
+                        <h4>增强选项</h4>
+                        <div class="control-options">
+                            <div class="control-option active" data-ai="super_resolution">
+                                <i class="fas fa-search-plus" style="display: block; margin-bottom: 5px; font-size: 20px;"></i>
+                                超分辨率
+                            </div>
+                            <div class="control-option" data-ai="denoise">
+                                <i class="fas fa-broom" style="display: block; margin-bottom: 5px; font-size: 20px;"></i>
+                                降噪处理
+                            </div>
+                            <div class="control-option" data-ai="colorize">
+                                <i class="fas fa-fill-drip" style="display: block; margin-bottom: 5px; font-size: 20px;"></i>
+                                智能上色
+                            </div>
+                            <div class="control-option" data-ai="restore">
+                                <i class="fas fa-history" style="display: block; margin-bottom: 5px; font-size: 20px;"></i>
+                                修复老照片
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <h4>增强强度</h4>
+                        <input type="range" min="1" max="10" value="5" class="control-slider" id="aiStrengthSlider">
+                        <div class="control-value">
+                            <span class="control-value-min">柔和</span>
+                            <span id="aiStrengthValue">5/10</span>
+                            <span class="control-value-max">强烈</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="file-btn secondary" id="cancelAiEnhance">取消</button>
+                <button class="file-btn" id="applyAiEnhance" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                    <i class="fas fa-magic"></i>
+                    开始AI增强
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 消息提示 -->
+    <div class="toast" id="toast">
+        <i class="fas fa-check-circle"></i>
+        <span id="toastMessage">操作成功完成</span>
+    </div>
+
+    <!-- 开关样式 -->
+    <style>
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: var(--mango-yellow);
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+    </style>
+
+    <script>
+        // 初始化变量和状态
+        const imageCanvas = document.getElementById('imageCanvas');
+        const imageCtx = imageCanvas.getContext('2d');
+        const drawCanvas = document.getElementById('drawCanvas');
+        const drawCtx = drawCanvas.getContext('2d');
+        const textCanvas = document.getElementById('textCanvas');
+        const textCtx = textCanvas.getContext('2d');
+        const doodleCanvas = document.getElementById('doodleCanvas');
+        const doodleCtx = doodleCanvas.getContext('2d');
+        
+        // 编辑器状态
+        let editorState = {
+            // 基础状态
+            name: '未命名图片',
+            isModified: false,
+            lastSave: null,
+            
+            // 图片状态
+            originalImage: null,
+            currentImage: null,
+            imageFormat: 'png',
+            imageSize: { width: 800, height: 600 },
+            
+            // 编辑状态
+            filters: {
+                brightness: 0,
+                contrast: 0,
+                saturation: 0,
+                blur: 0,
+                filter: 'none'
+            },
+            zoom: 1.0,
+            rotation: 0,
+            showGrid: false,
+            showGuides: false,
+            
+            // 工具状态
+            currentTool: 'select',
+            brushColor: '#ff0000',
+            brushSize: 5,
+            brushOpacity: 100,
+            
+            // 历史记录
+            history: [],
+            historyIndex: -1,
+            maxHistory: 50,
+            
+            // 性能监控
+            startTime: Date.now(),
+            editCount: 0,
+            memoryUsage: 0,
+            
+            // 用户偏好
+            preferences: {
+                autoSave: true,
+                showTips: true,
+                defaultFormat: 'png',
+                defaultQuality: 10
+            },
+            
+            // 项目数据
+            projectData: {
+                layers: [],
+                effects: [],
+                metadata: {}
+            }
+        };
+        
+        // 性能优化变量
+        let renderRequestId = null;
+        let lastRenderTime = 0;
+        const renderInterval = 16; // ~60fps
+        
+        // 初始化编辑器
+        function initEditor() {
+            // 设置初始状态
+            createBlankCanvas(800, 600, '#ffffff');
+            
+            // 初始化事件监听器
+            initEventListeners();
+            
+            // 初始化UI状态
+            updateUI();
+            
+            // 开始性能监控
+            startPerformanceMonitor();
+            
+            // 显示欢迎提示
+            setTimeout(() => {
+                showToast('欢迎使用芒果图片编辑器！', 'info');
+                showTip('首次使用提示', '您可以通过拖放图片到编辑区域快速打开图片。');
+            }, 1000);
+        }
+        
+        // 创建空白画布
+        function createBlankCanvas(width, height, backgroundColor) {
+            // 设置画布尺寸
+            imageCanvas.width = drawCanvas.width = textCanvas.width = doodleCanvas.width = width;
+            imageCanvas.height = drawCanvas.height = textCanvas.height = doodleCanvas.height = height;
+            
+            // 清空所有画布
+            clearAllCanvases();
+            
+            // 填充背景色
+            if (backgroundColor !== 'transparent') {
+                imageCtx.fillStyle = backgroundColor;
+                imageCtx.fillRect(0, 0, width, height);
+            }
+            
+            // 更新状态
+            editorState.imageSize = { width, height };
+            editorState.originalImage = null;
+            editorState.currentImage = null;
+            
+            // 添加到历史记录
+            saveToHistory();
+            
+            // 显示画布
+            showCanvas();
+            
+            // 更新UI
+            updateDocumentInfo();
+        }
+        
+        // 显示画布
+        function showCanvas() {
+            document.getElementById('emptyState').style.display = 'none';
+            document.getElementById('imageWrapper').style.display = 'block';
+        }
+        
+        // 显示空状态
+        function showEmptyState() {
+            document.getElementById('emptyState').style.display = 'flex';
+            document.getElementById('imageWrapper').style.display = 'none';
+        }
+        
+        // 清空所有画布
+        function clearAllCanvases() {
+            imageCtx.clearRect(0, 0, imageCanvas.width, imageCanvas.height);
+            drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+            textCtx.clearRect(0, 0, textCanvas.width, textCanvas.height);
+            doodleCtx.clearRect(0, 0, doodleCanvas.width, doodleCanvas.height);
+        }
+        
+        // 保存到历史记录
+        function saveToHistory() {
+            // 限制历史记录数量
+            if (editorState.history.length >= editorState.maxHistory) {
+                editorState.history.shift();
+            }
+            
+            // 创建快照
+            const snapshot = {
+                imageData: imageCtx.getImageData(0, 0, imageCanvas.width, imageCanvas.height),
+                drawData: drawCtx.getImageData(0, 0, drawCanvas.width, drawCanvas.height),
+                textData: textCtx.getImageData(0, 0, textCanvas.width, textCanvas.height),
+                doodleData: doodleCtx.getImageData(0, 0, doodleCanvas.width, doodleCanvas.height),
+                filters: { ...editorState.filters },
+                zoom: editorState.zoom,
+                rotation: editorState.rotation,
+                timestamp: Date.now()
+            };
+            
+            // 保存快照
+            editorState.history.push(snapshot);
+            editorState.historyIndex = editorState.history.length - 1;
+            
+            // 标记为已修改
+            editorState.isModified = true;
+            updateSaveStatus();
+        }
+        
+        // 从历史记录恢复
+        function restoreFromHistory(index) {
+            if (index < 0 || index >= editorState.history.length) return;
+            
+            const snapshot = editorState.history[index];
+            
+            // 恢复画布数据
+            imageCtx.putImageData(snapshot.imageData, 0, 0);
+            drawCtx.putImageData(snapshot.drawData, 0, 0);
+            textCtx.putImageData(snapshot.textData, 0, 0);
+            doodleCtx.putImageData(snapshot.doodleData, 0, 0);
+            
+            // 恢复状态
+            editorState.filters = { ...snapshot.filters };
+            editorState.zoom = snapshot.zoom;
+            editorState.rotation = snapshot.rotation;
+            editorState.historyIndex = index;
+            
+            // 更新UI
+            updateSliders();
+            updateDocumentInfo();
+            
+            // 标记为已修改
+            editorState.isModified = true;
+            updateSaveStatus();
+        }
+        
+        // 撤销操作
+        function undo() {
+            if (editorState.historyIndex > 0) {
+                restoreFromHistory(editorState.historyIndex - 1);
+                showToast('已撤销上一步操作', 'info');
+            } else {
+                showToast('没有更多历史记录可以撤销', 'warning');
+            }
+        }
+        
+        // 重做操作
+        function redo() {
+            if (editorState.historyIndex < editorState.history.length - 1) {
+                restoreFromHistory(editorState.historyIndex + 1);
+                showToast('已重做操作', 'info');
+            } else {
+                showToast('没有更多历史记录可以重做', 'warning');
+            }
+        }
+        
+        // 更新滑块值
+        function updateSliders() {
+            // 更新亮度滑块
+            const brightnessSlider = document.getElementById('brightnessSlider');
+            const brightnessValue = document.getElementById('brightnessValue');
+            if (brightnessSlider) {
+                brightnessSlider.value = editorState.filters.brightness;
+                brightnessValue.textContent = editorState.filters.brightness;
+            }
+            
+            // 更新其他滑块...
+            // 这里可以添加其他滑块的更新逻辑
+        }
+        
+        // 更新文档信息
+        function updateDocumentInfo() {
+            // 更新图片尺寸
+            const imageSizeElement = document.getElementById('imageSize');
+            if (imageSizeElement) {
+                imageSizeElement.textContent = `${editorState.imageSize.width} × ${editorState.imageSize.height} px`;
+            }
+            
+            // 更新缩放比例
+            const zoomLevelElement = document.getElementById('zoomLevel');
+            if (zoomLevelElement) {
+                zoomLevelElement.textContent = `${Math.round(editorState.zoom * 100)}%`;
+            }
+            
+            // 更新文件格式
+            const fileFormatElement = document.getElementById('fileFormat');
+            if (fileFormatElement) {
+                fileFormatElement.textContent = editorState.imageFormat.toUpperCase();
+            }
+            
+            // 更新编辑时间
+            const editTimeElement = document.getElementById('editTime');
+            if (editTimeElement) {
+                const minutes = Math.floor((Date.now() - editorState.startTime) / 60000);
+                const seconds = Math.floor(((Date.now() - editorState.startTime) % 60000) / 1000);
+                editTimeElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+        }
+        
+        // 更新保存状态
+        function updateSaveStatus() {
+            const saveStatusIcon = document.getElementById('saveStatusIcon');
+            const saveStatus = document.getElementById('saveStatus');
+            
+            if (editorState.isModified) {
+                saveStatusIcon.className = 'fas fa-exclamation-circle';
+                saveStatusIcon.style.color = 'var(--mango-warning)';
+                saveStatus.textContent = '未保存';
+            } else {
+                saveStatusIcon.className = 'fas fa-check-circle';
+                saveStatusIcon.style.color = 'var(--mango-success)';
+                saveStatus.textContent = '已保存';
+            }
+        }
+        
+        // 显示加载动画
+        function showLoading() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+        
+        // 隐藏加载动画
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+        
+        // 显示进度指示器
+        function showProgress() {
+            const progressIndicator = document.getElementById('progressIndicator');
+            progressIndicator.classList.add('active');
+        }
+        
+        // 隐藏进度指示器
+        function hideProgress() {
+            const progressIndicator = document.getElementById('progressIndicator');
+            progressIndicator.classList.remove('active');
+        }
+        
+        // 显示消息提示
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            // 设置消息和类型
+            toastMessage.textContent = message;
+            toast.className = 'toast';
+            toast.classList.add(type);
+            
+            // 显示消息
+            toast.style.display = 'flex';
+            
+            // 自动隐藏
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+        
+        // 显示工具提示
+        function showTooltip(element, text) {
+            const tooltip = document.getElementById('tooltip');
+            const rect = element.getBoundingClientRect();
+            
+            tooltip.textContent = text;
+            tooltip.style.top = (rect.top - 40) + 'px';
+            tooltip.style.left = (rect.left + rect.width / 2 - tooltip.offsetWidth / 2) + 'px';
+            tooltip.classList.add('show');
+        }
+        
+        // 隐藏工具提示
+        function hideTooltip() {
+            const tooltip = document.getElementById('tooltip');
+            tooltip.classList.remove('show');
+        }
+        
+        // 显示使用提示
+        function showTip(title, message) {
+            if (!editorState.preferences.showTips) return;
+            
+            // 创建提示元素
+            const tip = document.createElement('div');
+            tip.className = 'toast info';
+            tip.innerHTML = `
+                <i class="fas fa-lightbulb"></i>
+                <div>
+                    <div style="font-weight: 600; margin-bottom: 4px;">${title}</div>
+                    <div style="font-size: 12px;">${message}</div>
+                </div>
+                <button onclick="this.parentElement.remove()" style="background: none; border: none; color: inherit; cursor: pointer; margin-left: auto;">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            
+            // 添加到页面
+            document.body.appendChild(tip);
+            
+            // 设置位置
+            tip.style.bottom = '80px';
+            tip.style.right = '30px';
+            tip.style.display = 'flex';
+            
+            // 自动隐藏
+            setTimeout(() => {
+                if (tip.parentElement) {
+                    tip.remove();
+                }
+            }, 5000);
+        }
+        
+        // 开始性能监控
+        function startPerformanceMonitor() {
+            setInterval(() => {
+                // 监控内存使用
+                if (performance.memory) {
+                    const usedMemory = performance.memory.usedJSHeapSize;
+                    const totalMemory = performance.memory.totalJSHeapSize;
+                    const memoryPercentage = Math.min(100, Math.round((usedMemory / totalMemory) * 100));
+                    
+                    // 更新内存进度条
+                    const memoryProgress = document.getElementById('memoryProgress');
+                    if (memoryProgress) {
+                        memoryProgress.style.width = memoryPercentage + '%';
+                    }
+                    
+                    editorState.memoryUsage = memoryPercentage;
+                }
+            }, 5000);
+        }
+        
+        // 初始化事件监听器
+        function initEventListeners() {
+            // 文档标题编辑
+            const titleInput = document.getElementById('documentTitleInput');
+            if (titleInput) {
+                titleInput.addEventListener('input', function() {
+                    editorState.name = this.value || '未命名图片';
+                });
+                
+                titleInput.addEventListener('blur', function() {
+                    if (!this.value.trim()) {
+                        this.value = '未命名图片';
+                        editorState.name = '未命名图片';
+                    }
+                });
+                
+                titleInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        this.blur();
+                    }
+                });
+            }
+            
+            // 窗口控制按钮
+            document.getElementById('minimizeBtn').addEventListener('click', function() {
+                showToast('最小化功能在浏览器中不可用', 'warning');
+            });
+            
+            document.getElementById('maximizeBtn').addEventListener('click', function() {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(err => {
+                        showToast('全屏模式失败: ' + err.message, 'error');
+                    });
+                } else {
+                    document.exitFullscreen();
+                }
+            });
+            
+            document.getElementById('closeBtn').addEventListener('click', function() {
+                if (editorState.isModified) {
+                    if (confirm('您有未保存的更改。确定要离开吗？')) {
+                        showToast('编辑器已关闭', 'warning');
+                        // 在实际应用中，这里应该关闭窗口或跳转到其他页面
+                    }
+                } else {
+                    showToast('编辑器已关闭', 'warning');
+                }
+            });
+            
+            // 文件操作按钮
+            document.getElementById('newImageBtn').addEventListener('click', function() {
+                showModal('newImageModal');
+            });
+            
+            document.getElementById('openImageBtn').addEventListener('click', function() {
+                document.getElementById('fileInput').click();
+            });
+            
+            document.getElementById('saveImageBtn').addEventListener('click', function() {
+                if (editorState.isModified) {
+                    saveImage();
+                } else {
+                    showToast('没有需要保存的更改', 'info');
+                }
+            });
+            
+            document.getElementById('saveAsBtn').addEventListener('click', function() {
+                showModal('saveImageModal');
+            });
+            
+            document.getElementById('exportBtn').addEventListener('click', function() {
+                showModal('exportImageModal');
+            });
+            
+            document.getElementById('shareBtn').addEventListener('click', function() {
+                showModal('shareImageModal');
+            });
+            
+            document.getElementById('printBtn').addEventListener('click', function() {
+                printImage();
+            });
+            
+            // 文件上传
+            document.getElementById('fileInput').addEventListener('change', function(e) {
+                const files = e.target.files;
+                if (files.length > 0) {
+                    loadImageFile(files[0]);
+                }
+            });
+            
+            // 拖放上传
+            document.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+            
+            document.addEventListener('drop', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    loadImageFile(files[0]);
+                }
+            });
+            
+            // 空状态按钮
+            document.getElementById('uploadFirstImageBtn').addEventListener('click', function() {
+                document.getElementById('fileInput').click();
+            });
+            
+            document.getElementById('createFirstImageBtn').addEventListener('click', function() {
+                showModal('newImageModal');
+            });
+            
+            // 工具栏按钮
+            document.getElementById('adjustBtn').addEventListener('click', function() {
+                toggleControlPanel('adjustPanel', this);
+            });
+            
+            document.getElementById('filterBtn').addEventListener('click', function() {
+                toggleControlPanel('filterPanel', this);
+            });
+            
+            document.getElementById('cropBtn').addEventListener('click', function() {
+                toggleControlPanel('cropPanel', this);
+            });
+            
+            document.getElementById('rotateBtn').addEventListener('click', function() {
+                toggleControlPanel('rotatePanel', this);
+            });
+            
+            document.getElementById('drawBtn').addEventListener('click', function() {
+                toggleControlPanel('drawPanel', this);
+            });
+            
+            document.getElementById('textBtn').addEventListener('click', function() {
+                toggleControlPanel('textPanel', this);
+            });
+            
+            document.getElementById('collageBtn').addEventListener('click', function() {
+                toggleControlPanel('collagePanel', this);
+            });
+            
+            document.getElementById('doodleBtn').addEventListener('click', function() {
+                toggleControlPanel('doodlePanel', this);
+            });
+            
+            // 编辑操作按钮
+            document.getElementById('undoBtn').addEventListener('click', undo);
+            document.getElementById('redoBtn').addEventListener('click', redo);
+            document.getElementById('resetBtn').addEventListener('click', function() {
+                if (confirm('确定要重置所有更改吗？此操作不可撤销。')) {
+                    if (editorState.history.length > 0) {
+                        restoreFromHistory(0);
+                        showToast('已重置到初始状态', 'info');
+                    }
+                }
+            });
+            
+            // 缩放按钮
+            document.getElementById('zoomInBtn').addEventListener('click', function() {
+                zoomIn();
+            });
+            
+            document.getElementById('zoomOutBtn').addEventListener('click', function() {
+                zoomOut();
+            });
+            
+            document.getElementById('zoomResetBtn').addEventListener('click', function() {
+                resetZoom();
+            });
+            
+            document.getElementById('zoomInCanvasBtn').addEventListener('click', function() {
+                zoomIn();
+            });
+            
+            document.getElementById('zoomOutCanvasBtn').addEventListener('click', function() {
+                zoomOut();
+            });
+            
+            document.getElementById('resetCanvasBtn').addEventListener('click', function() {
+                resetZoom();
+                // 重置其他视图设置
+                editorState.showGrid = false;
+                editorState.showGuides = false;
+                showToast('视图已重置', 'info');
+            });
+            
+            document.getElementById('toggleGridBtn').addEventListener('click', function() {
+                editorState.showGrid = !editorState.showGrid;
+                showToast(editorState.showGrid ? '网格已显示' : '网格已隐藏', 'info');
+            });
+            
+            document.getElementById('toggleGuidesBtn').addEventListener('click', function() {
+                editorState.showGuides = !editorState.showGuides;
+                showToast(editorState.showGuides ? '参考线已显示' : '参考线已隐藏', 'info');
+            });
+            
+            // 侧边栏切换
+            document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
+            document.getElementById('sidebarToggleBtn').addEventListener('click', toggleSidebar);
+            
+            // 全屏切换
+            document.getElementById('toggleFullscreenBtn').addEventListener('click', function() {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(err => {
+                        showToast('全屏模式失败: ' + err.message, 'error');
+                    });
+                } else {
+                    document.exitFullscreen();
+                }
+            });
+            
+            // 帮助按钮
+            document.getElementById('toggleGuideBtn').addEventListener('click', function() {
+                showTip('操作指南', '使用左侧工具栏选择编辑工具，右侧面板调整具体参数。');
+            });
+            
+            // 键盘快捷键
+            document.addEventListener('keydown', function(e) {
+                // 防止在输入框中触发快捷键
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                    return;
+                }
+                
+                // Ctrl/Cmd + 快捷键
+                if (e.ctrlKey || e.metaKey) {
+                    switch(e.key.toLowerCase()) {
+                        case 'z':
+                            e.preventDefault();
+                            if (e.shiftKey) {
+                                redo(); // Ctrl+Shift+Z
+                            } else {
+                                undo(); // Ctrl+Z
+                            }
+                            break;
+                        case 'y':
+                            e.preventDefault();
+                            redo(); // Ctrl+Y
+                            break;
+                        case 's':
+                            e.preventDefault();
+                            if (editorState.isModified) {
+                                saveImage();
+                            }
+                            break;
+                        case 'o':
+                            e.preventDefault();
+                            document.getElementById('fileInput').click();
+                            break;
+                        case 'n':
+                            e.preventDefault();
+                            showModal('newImageModal');
+                            break;
+                        case 'p':
+                            e.preventDefault();
+                            printImage();
+                            break;
+                        case '+':
+                        case '=':
+                            e.preventDefault();
+                            zoomIn();
+                            break;
+                        case '-':
+                            e.preventDefault();
+                            zoomOut();
+                            break;
+                        case '0':
+                            e.preventDefault();
+                            resetZoom();
+                            break;
+                    }
+                }
+                
+                // Esc键关闭模态框
+                if (e.key === 'Escape') {
+                    closeAllModals();
+                }
+            });
+            
+            // 模态框事件
+            initModalEvents();
+            
+            // 工具提示事件
+            initTooltipEvents();
+        }
+        
+        // 切换控制面板
+        function toggleControlPanel(panelId, button) {
+            // 获取所有面板和按钮
+            const panels = document.querySelectorAll('.control-panel');
+            const buttons = document.querySelectorAll('.toolbar-btn');
+            
+            // 隐藏所有面板
+            panels.forEach(panel => {
+                panel.classList.remove('active');
+            });
+            
+            // 移除所有按钮的激活状态
+            buttons.forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // 显示当前面板并激活按钮
+            const panel = document.getElementById(panelId);
+            if (panel) {
+                panel.classList.add('active');
+                button.classList.add('active');
+            }
+        }
+        
+        // 切换侧边栏
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('show');
+            
+            const toggleBtn = document.getElementById('sidebarToggleBtn');
+            toggleBtn.innerHTML = sidebar.classList.contains('show') ? 
+                '<i class="fas fa-chevron-left"></i>' : 
+                '<i class="fas fa-chevron-right"></i>';
+        }
+        
+        // 缩放功能
+        function zoomIn() {
+            editorState.zoom = Math.min(editorState.zoom + 0.1, 3.0);
+            updateDocumentInfo();
+            showToast(`缩放: ${Math.round(editorState.zoom * 100)}%`, 'info');
+        }
+        
+        function zoomOut() {
+            editorState.zoom = Math.max(editorState.zoom - 0.1, 0.1);
+            updateDocumentInfo();
+            showToast(`缩放: ${Math.round(editorState.zoom * 100)}%`, 'info');
+        }
+        
+        function resetZoom() {
+            editorState.zoom = 1.0;
+            updateDocumentInfo();
+            showToast('缩放已重置', 'info');
+        }
+        
+        // 加载图片文件
+        function loadImageFile(file) {
+            // 检查文件类型
+            const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/bmp', 'image/gif'];
+            if (!validTypes.includes(file.type)) {
+                showToast('不支持的文件格式。请选择图片文件。', 'error');
+                return;
+            }
+            
+            // 显示加载动画
+            showLoading();
+            showProgress();
+            
+            // 读取文件
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // 创建图片对象
+                const img = new Image();
+                img.onload = function() {
+                    // 设置画布尺寸
+                    imageCanvas.width = drawCanvas.width = textCanvas.width = doodleCanvas.width = img.width;
+                    imageCanvas.height = drawCanvas.height = textCanvas.height = doodleCanvas.height = img.height;
+                    
+                    // 清空画布
+                    clearAllCanvases();
+                    
+                    // 绘制图片
+                    imageCtx.drawImage(img, 0, 0);
+                    
+                    // 更新状态
+                    editorState.originalImage = img;
+                    editorState.currentImage = img;
+                    editorState.imageSize = { width: img.width, height: img.height };
+                    editorState.name = file.name.replace(/\.[^/.]+$/, ""); // 移除扩展名
+                    
+                    // 更新文档标题
+                    const titleInput = document.getElementById('documentTitleInput');
+                    if (titleInput) {
+                        titleInput.value = editorState.name;
+                    }
+                    
+                    // 保存到历史记录
+                    saveToHistory();
+                    
+                    // 显示画布
+                    showCanvas();
+                    
+                    // 更新UI
+                    updateDocumentInfo();
+                    updateSaveStatus();
+                    
+                    // 隐藏加载动画
+                    hideLoading();
+                    hideProgress();
+                    
+                    // 显示成功消息
+                    showToast(`图片已加载: ${file.name}`, 'success');
+                    
+                    // 显示使用提示
+                    showTip('图片已加载', '您可以使用工具栏中的工具编辑图片。');
+                };
+                
+                img.onerror = function() {
+                    hideLoading();
+                    hideProgress();
+                    showToast('图片加载失败', 'error');
+                };
+                
+                img.src = e.target.result;
+            };
+            
+            reader.onerror = function() {
+                hideLoading();
+                hideProgress();
+                showToast('文件读取失败', 'error');
+            };
+            
+            reader.readAsDataURL(file);
+        }
+        
+        // 保存图片
+        function saveImage() {
+            // 显示进度指示器
+            showProgress();
+            
+            // 创建合成图片
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            
+            tempCanvas.width = imageCanvas.width;
+            tempCanvas.height = imageCanvas.height;
+            
+            // 绘制所有图层
+            tempCtx.drawImage(imageCanvas, 0, 0);
+            tempCtx.drawImage(drawCanvas, 0, 0);
+            tempCtx.drawImage(textCanvas, 0, 0);
+            tempCtx.drawImage(doodleCanvas, 0, 0);
+            
+            // 根据格式保存
+            const format = editorState.imageFormat;
+            const fileName = `${editorState.name}.${format}`;
+            
+            tempCanvas.toBlob(function(blob) {
+                // 创建下载链接
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                a.click();
+                
+                // 清理
+                URL.revokeObjectURL(url);
+                
+                // 更新保存状态
+                editorState.isModified = false;
+                editorState.lastSave = Date.now();
+                updateSaveStatus();
+                
+                // 隐藏进度指示器
+                hideProgress();
+                
+                // 显示成功消息
+                showToast(`图片已保存: ${fileName}`, 'success');
+            }, `image/${format}`, 1.0);
+        }
+        
+        // 打印图片
+        function printImage() {
+            // 创建打印窗口
+            const printWindow = window.open('', '_blank');
+            
+            // 获取图片数据
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            
+            tempCanvas.width = imageCanvas.width;
+            tempCanvas.height = imageCanvas.height;
+            
+            // 绘制所有图层
+            tempCtx.drawImage(imageCanvas, 0, 0);
+            tempCtx.drawImage(drawCanvas, 0, 0);
+            tempCtx.drawImage(textCanvas, 0, 0);
+            tempCtx.drawImage(doodleCanvas, 0, 0);
+            
+            const imageData = tempCanvas.toDataURL('image/png');
+            
+            // 写入打印内容
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>打印 - ${editorState.name}</title>
+                    <style>
+                        body {
+                            font-family: "Microsoft YaHei", sans-serif;
+                            margin: 0;
+                            padding: 20px;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                        }
+                        .print-title {
+                            font-size: 24px;
+                            margin-bottom: 20px;
+                            color: #333;
+                            text-align: center;
+                        }
+                        .print-image {
+                            max-width: 100%;
+                            height: auto;
+                            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+                        }
+                        .print-footer {
+                            margin-top: 20px;
+                            font-size: 14px;
+                            color: #666;
+                            text-align: center;
+                        }
+                        @media print {
+                            body { padding: 0; }
+                            .print-title { font-size: 20px; }
+                            .print-footer { display: none; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="print-title">${editorState.name}</div>
+                    <img src="${imageData}" class="print-image" alt="${editorState.name}">
+                    <div class="print-footer">
+                        打印时间: ${new Date().toLocaleString()}
+                    </div>
+                    <script>
+                        window.onload = function() {
+                            window.print();
+                            setTimeout(function() {
+                                window.close();
+                            }, 1000);
+                        }
+                    <\/script>
+                </body>
+                </html>
+            `);
+            
+            printWindow.document.close();
+            showToast('正在打印...', 'info');
+        }
+        
+        // 显示模态框
+        function showModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'flex';
+                
+                // 设置模态框内容
+                if (modalId === 'saveImageModal') {
+                    const saveImageName = document.getElementById('saveImageName');
+                    if (saveImageName) {
+                        saveImageName.value = editorState.name;
+                    }
+                }
+            }
+        }
+        
+        // 关闭所有模态框
+        function closeAllModals() {
+            const modals = document.querySelectorAll('.modal-overlay');
+            modals.forEach(modal => {
+                modal.style.display = 'none';
+            });
+        }
+        
+        // 初始化模态框事件
+        function initModalEvents() {
+            // 新建图片模态框
+            const imageSizeSelect = document.getElementById('imageSizeSelect');
+            const customSizeGroup = document.getElementById('customSizeGroup');
+            
+            if (imageSizeSelect && customSizeGroup) {
+                imageSizeSelect.addEventListener('change', function() {
+                    customSizeGroup.style.display = this.value === 'custom' ? 'block' : 'none';
+                });
+            }
+            
+            // 颜色选择器
+            document.querySelectorAll('.color-swatch').forEach(swatch => {
+                swatch.addEventListener('click', function() {
+                    const color = this.getAttribute('data-color');
+                    const colorInput = document.getElementById('backgroundColor');
+                    
+                    if (colorInput) {
+                        if (color === 'transparent') {
+                            // 透明背景特殊处理
+                            colorInput.value = '#ffffff';
+                        } else {
+                            colorInput.value = color;
+                        }
+                    }
+                    
+                    // 更新选中状态
+                    document.querySelectorAll('.color-swatch').forEach(s => {
+                        s.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                });
+            });
+            
+            // 创建新图片
+            document.getElementById('createNewImage').addEventListener('click', function() {
+                // 获取表单数据
+                const imageName = document.getElementById('newImageName').value || '未命名图片';
+                const sizeSelect = document.getElementById('imageSizeSelect').value;
+                const backgroundColor = document.getElementById('backgroundColor').value;
+                
+                let width, height;
+                
+                if (sizeSelect === 'custom') {
+                    width = parseInt(document.getElementById('customWidth').value) || 800;
+                    height = parseInt(document.getElementById('customHeight').value) || 600;
+                } else {
+                    const dimensions = sizeSelect.split('x');
+                    width = parseInt(dimensions[0]);
+                    height = parseInt(dimensions[1]);
+                }
+                
+                // 限制尺寸范围
+                width = Math.max(100, Math.min(5000, width));
+                height = Math.max(100, Math.min(5000, height));
+                
+                // 创建画布
+                createBlankCanvas(width, height, backgroundColor);
+                
+                // 更新文档标题
+                editorState.name = imageName;
+                const titleInput = document.getElementById('documentTitleInput');
+                if (titleInput) {
+                    titleInput.value = imageName;
+                }
+                
+                // 关闭模态框
+                closeAllModals();
+                
+                // 显示成功消息
+                showToast(`已创建新图片: ${width} × ${height}`, 'success');
+            });
+            
+            // 取消按钮
+            document.querySelectorAll('.modal-close, .file-btn.secondary[id$="Cancel"], .file-btn.secondary[id^="cancel"]').forEach(btn => {
+                btn.addEventListener('click', closeAllModals);
+            });
+            
+            // 模态框外部点击关闭
+            document.querySelectorAll('.modal-overlay').forEach(modal => {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        closeAllModals();
+                    }
+                });
+            });
+        }
+        
+        // 初始化工具提示事件
+        function initTooltipEvents() {
+            // 为所有有title属性的元素添加工具提示
+            document.querySelectorAll('[title]').forEach(element => {
+                element.addEventListener('mouseenter', function(e) {
+                    showTooltip(this, this.getAttribute('title'));
+                });
+                
+                element.addEventListener('mouseleave', hideTooltip);
+            });
+        }
+        
+        // 更新UI状态
+        function updateUI() {
+            updateDocumentInfo();
+            updateSaveStatus();
+            
+            // 更新徽章
+            updateBadges();
+        }
+        
+        // 更新徽章
+        function updateBadges() {
+            // 更新拼图徽章
+            const collageBadge = document.getElementById('collageBadge');
+            if (collageBadge) {
+                // 这里可以添加动态更新逻辑
+                // 例如: collageBadge.textContent = newCollageCount;
+            }
+            
+            // 更新涂鸦徽章
+            const doodleBadge = document.getElementById('doodleBadge');
+            if (doodleBadge) {
+                // 这里可以添加动态更新逻辑
+            }
+        }
+        
+        // 初始化编辑器
+        window.addEventListener('load', initEditor);
+        
+        // 导出函数供全局使用
+        window.showToast = showToast;
+        window.undo = undo;
+        window.redo = redo;
+    </script>
+</body>
+</html>
