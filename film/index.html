@@ -1,0 +1,2359 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MW | 在线动画制作器</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* 主题变量 - 橙色主题 */
+        :root {
+            --primary-orange: #FF9800;
+            --light-orange: #FFE0B2;
+            --dark-orange: #F57C00;
+            --orange-gray: #f5f5f5;
+            --orange-dark-gray: #333;
+            --orange-border: #e0e0e0;
+            --orange-toolbar-bg: #fafafa;
+            --orange-hover: #f0f0f0;
+            --orange-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            --orange-bg-gradient: linear-gradient(135deg, #FF9800, #FF5722);
+        }
+        
+        /* 基础样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+        }
+        
+        body {
+            background-color: #f0f2f5;
+            color: var(--orange-dark-gray);
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        
+        /* 标题栏 */
+        .title-bar {
+            background: var(--orange-bg-gradient);
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 60px;
+            border-bottom: 1px solid var(--dark-orange);
+            box-shadow: var(--orange-shadow);
+            z-index: 100;
+        }
+        
+        .app-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            color: white;
+            font-size: 18px;
+        }
+        
+        .app-title i {
+            font-size: 24px;
+        }
+        
+        .document-title {
+            flex: 1;
+            margin: 0 20px;
+            font-size: 16px;
+            color: white;
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        .window-controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .window-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            font-size: 16px;
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            cursor: pointer;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+        }
+        
+        .window-btn:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        /* 工具栏 */
+        .toolbar {
+            background-color: white;
+            padding: 8px 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            border-bottom: 1px solid var(--orange-border);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            padding-right: 10px;
+            margin-right: 10px;
+            border-right: 1px solid var(--orange-border);
+        }
+        
+        .toolbar-group:last-child {
+            border-right: none;
+        }
+        
+        .toolbar-btn {
+            background: none;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #555;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        
+        .toolbar-btn:hover {
+            background-color: var(--light-orange);
+            color: var(--dark-orange);
+        }
+        
+        .toolbar-btn.active {
+            background-color: var(--light-orange);
+            color: var(--dark-orange);
+            font-weight: 600;
+        }
+        
+        .toolbar-btn i {
+            font-size: 16px;
+        }
+        
+        .separator {
+            width: 1px;
+            height: 20px;
+            background-color: var(--orange-border);
+            margin: 0 5px;
+        }
+        
+        /* 文件操作栏 */
+        .file-bar {
+            background-color: white;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid var(--orange-border);
+        }
+        
+        .file-btn {
+            background: var(--orange-bg-gradient);
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            box-shadow: 0 2px 5px rgba(255, 152, 0, 0.2);
+        }
+        
+        .file-btn:hover {
+            background: var(--dark-orange);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(255, 152, 0, 0.3);
+        }
+        
+        .file-btn.secondary {
+            background: white;
+            color: var(--primary-orange);
+            border: 2px solid var(--primary-orange);
+            box-shadow: none;
+        }
+        
+        .file-btn.secondary:hover {
+            background-color: var(--light-orange);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(255, 152, 0, 0.2);
+        }
+        
+        /* 主要内容区 */
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        /* 侧边栏 */
+        .sidebar {
+            width: 260px;
+            background-color: white;
+            border-right: 1px solid var(--orange-border);
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+        }
+        
+        .sidebar-section {
+            margin-bottom: 30px;
+        }
+        
+        .sidebar-section h3 {
+            font-size: 14px;
+            color: var(--dark-orange);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 5px;
+            transition: all 0.2s;
+        }
+        
+        .sidebar-item:hover {
+            background-color: var(--light-orange);
+            transform: translateX(3px);
+        }
+        
+        .sidebar-item.active {
+            background-color: var(--light-orange);
+            color: var(--dark-orange);
+            font-weight: 600;
+            border-left: 4px solid var(--primary-orange);
+        }
+        
+        .sidebar-item i {
+            font-size: 18px;
+            width: 20px;
+            text-align: center;
+            color: var(--primary-orange);
+        }
+        
+        /* 编辑区域 */
+        .editor-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: white;
+            overflow: hidden;
+        }
+        
+        .image-container {
+            flex: 1;
+            padding: 20px;
+            overflow: auto;
+            background: linear-gradient(45deg, #f8f9fa, #ffffff);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .image-wrapper {
+            position: relative;
+            max-width: 100%;
+            max-height: 100%;
+            box-shadow: var(--orange-shadow);
+            background-color: white;
+            overflow: hidden;
+            border-radius: 8px;
+            border: 1px solid var(--orange-border);
+        }
+        
+        #imageCanvas {
+            display: block;
+            max-width: 100%;
+            max-height: 70vh;
+            background-color: white;
+        }
+        
+        .canvas-controls {
+            position: absolute;
+            bottom: 10px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .canvas-btn {
+            background-color: rgba(255, 152, 0, 0.9);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s;
+        }
+        
+        .canvas-btn:hover {
+            background-color: rgba(245, 124, 0, 0.95);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* 调整面板 */
+        .adjust-panel {
+            background-color: white;
+            padding: 20px;
+            border-top: 1px solid var(--orange-border);
+            display: none;
+        }
+        
+        .adjust-panel.active {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+        
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .adjust-group {
+            margin-bottom: 20px;
+        }
+        
+        .adjust-group h4 {
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+        }
+        
+        .adjust-slider {
+            width: 100%;
+            height: 8px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: linear-gradient(to right, #FFE0B2, var(--primary-orange));
+            border-radius: 4px;
+            outline: none;
+        }
+        
+        .adjust-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--primary-orange);
+            cursor: pointer;
+            border: 3px solid white;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        
+        .adjust-value {
+            font-size: 12px;
+            color: var(--dark-orange);
+            text-align: center;
+            margin-top: 5px;
+            font-weight: 500;
+        }
+        
+        .filter-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .filter-option {
+            padding: 10px 16px;
+            border: 2px solid var(--orange-border);
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: center;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        
+        .filter-option:hover {
+            border-color: var(--primary-orange);
+            background-color: var(--light-orange);
+            transform: translateY(-2px);
+        }
+        
+        .filter-option.active {
+            border-color: var(--primary-orange);
+            background-color: var(--light-orange);
+            color: var(--dark-orange);
+            font-weight: 600;
+        }
+        
+        /* 时间轴样式 */
+        .timeline-container {
+            background-color: white;
+            border-top: 1px solid var(--orange-border);
+            height: 180px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            display: none;
+            padding: 15px;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .timeline-container.active {
+            display: block;
+            animation: slideUp 0.3s ease;
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .timeline-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 0 10px;
+        }
+        
+        .timeline-controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .timeline-frames {
+            display: flex;
+            gap: 8px;
+            height: 120px;
+            padding: 0 10px;
+        }
+        
+        .frame-item {
+            position: relative;
+            min-width: 120px;
+            height: 100px;
+            border: 3px solid var(--orange-border);
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            background-color: #f9f9f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+        
+        .frame-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .frame-item.active {
+            border-color: var(--primary-orange);
+            background-color: var(--light-orange);
+            box-shadow: 0 5px 15px rgba(255, 152, 0, 0.2);
+        }
+        
+        .frame-item canvas {
+            max-width: 100%;
+            max-height: 100%;
+        }
+        
+        .frame-number {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            background-color: rgba(255, 152, 0, 0.9);
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 12px;
+        }
+        
+        .frame-actions {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            display: flex;
+            gap: 3px;
+        }
+        
+        .frame-btn {
+            width: 20px;
+            height: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            border-radius: 3px;
+            font-size: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        
+        .frame-btn:hover {
+            background-color: var(--primary-orange);
+            transform: scale(1.1);
+        }
+        
+        /* 动画控制面板 */
+        .animation-controls {
+            background-color: white;
+            padding: 20px;
+            border-top: 1px solid var(--orange-border);
+            display: none;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .animation-controls.active {
+            display: flex;
+            animation: slideDown 0.3s ease;
+        }
+        
+        .animation-control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .animation-control-group label {
+            font-size: 14px;
+            color: #555;
+            min-width: 80px;
+            font-weight: 600;
+        }
+        
+        .animation-input {
+            width: 80px;
+            padding: 8px 12px;
+            border: 2px solid var(--orange-border);
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .animation-input:focus {
+            border-color: var(--primary-orange);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.2);
+        }
+        
+        .playback-controls {
+            display: flex;
+            gap: 12px;
+            margin-left: auto;
+        }
+        
+        .playback-btn {
+            background: var(--orange-bg-gradient);
+            color: white;
+            border: none;
+            padding: 12px 18px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            box-shadow: 0 2px 5px rgba(255, 152, 0, 0.2);
+        }
+        
+        .playback-btn:hover {
+            background: var(--dark-orange);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(255, 152, 0, 0.3);
+        }
+        
+        .playback-btn.secondary {
+            background: white;
+            color: var(--primary-orange);
+            border: 2px solid var(--primary-orange);
+            box-shadow: none;
+        }
+        
+        .playback-btn.secondary:hover {
+            background-color: var(--light-orange);
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(255, 152, 0, 0.2);
+        }
+        
+        /* 帧编辑面板 */
+        .frame-edit-panel {
+            background-color: white;
+            padding: 20px;
+            border-top: 1px solid var(--orange-border);
+            display: none;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .frame-edit-panel.active {
+            display: flex;
+            animation: slideDown 0.3s ease;
+        }
+        
+        /* 预览窗口 */
+        .preview-window {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            border-radius: 12px;
+            width: 700px;
+            max-width: 90%;
+            max-height: 80vh;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            display: none;
+            flex-direction: column;
+            z-index: 2000;
+            overflow: hidden;
+            border: 3px solid var(--primary-orange);
+        }
+        
+        .preview-window.active {
+            display: flex;
+            animation: popIn 0.3s ease;
+        }
+        
+        @keyframes popIn {
+            from { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+            to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+        
+        .preview-header {
+            padding: 20px;
+            background: var(--orange-bg-gradient);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .preview-body {
+            flex: 1;
+            padding: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(45deg, #f8f9fa, #ffffff);
+        }
+        
+        .preview-canvas {
+            max-width: 100%;
+            max-height: 50vh;
+            background-color: white;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        
+        .preview-footer {
+            padding: 20px;
+            background-color: #f9f9f9;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        /* 导出选项 */
+        .export-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-top: 10px;
+        }
+        
+        .export-option {
+            border: 3px solid var(--orange-border);
+            border-radius: 10px;
+            padding: 25px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+        }
+        
+        .export-option:hover {
+            border-color: var(--primary-orange);
+            background-color: var(--light-orange);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(255, 152, 0, 0.1);
+        }
+        
+        .export-option.selected {
+            border-color: var(--primary-orange);
+            background-color: var(--light-orange);
+            box-shadow: 0 5px 15px rgba(255, 152, 0, 0.2);
+        }
+        
+        .export-option i {
+            font-size: 42px;
+            margin-bottom: 15px;
+            color: var(--primary-orange);
+        }
+        
+        /* 状态栏 */
+        .status-bar {
+            background: var(--orange-bg-gradient);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-top: 1px solid var(--dark-orange);
+            font-size: 14px;
+            color: white;
+            font-weight: 500;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .status-item i {
+            font-size: 16px;
+        }
+        
+        /* 模态框 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .modal {
+            background-color: white;
+            border-radius: 12px;
+            width: 550px;
+            max-width: 90%;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            border: 3px solid var(--primary-orange);
+        }
+        
+        .modal-header {
+            padding: 25px;
+            background: var(--orange-bg-gradient);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .modal-header h3 {
+            font-weight: 600;
+            font-size: 20px;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+        }
+        
+        .modal-close:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .modal-body {
+            padding: 25px;
+        }
+        
+        .modal-footer {
+            padding: 20px 25px;
+            background-color: #f9f9f9;
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid var(--orange-border);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .form-control:focus {
+            border-color: var(--primary-orange);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(255, 152, 0, 0.2);
+        }
+        
+        /* 加载遮罩 */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 3000;
+        }
+        
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary-orange);
+            animation: spin 1s linear infinite;
+            margin-bottom: 25px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* 消息提示 */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--orange-bg-gradient);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(255, 152, 0, 0.3);
+            display: none;
+            align-items: center;
+            gap: 12px;
+            z-index: 1001;
+            animation: slideInRight 0.3s ease;
+            border-left: 5px solid white;
+        }
+        
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .toast.error {
+            background: linear-gradient(135deg, #FF5722, #F44336);
+        }
+        
+        .toast.warning {
+            background: linear-gradient(135deg, #FFC107, #FF9800);
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 1200px) {
+            .sidebar {
+                width: 220px;
+            }
+        }
+        
+        @media (max-width: 992px) {
+            .sidebar {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .toolbar {
+                overflow-x: auto;
+            }
+            
+            .toolbar-group {
+                flex-shrink: 0;
+            }
+            
+            .image-container {
+                padding: 15px;
+            }
+            
+            .filter-options {
+                justify-content: center;
+            }
+            
+            .timeline-frames {
+                height: 90px;
+            }
+            
+            .frame-item {
+                min-width: 90px;
+                height: 75px;
+            }
+            
+            .animation-controls {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .playback-controls {
+                margin-left: 0;
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .export-options {
+                grid-template-columns: 1fr;
+            }
+            
+            .status-bar {
+                flex-wrap: wrap;
+                gap: 10px;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 顶部标题栏 -->
+        <div class="title-bar">
+            <div class="app-title">
+                <i class="fas fa-film"></i>
+                <span>Mango动画制作器</span>
+            </div>
+            <div class="document-title" id="documentTitle">未命名动画</div>
+            <div class="window-controls">
+                <button class="window-btn" id="minimizeBtn"><i class="fas fa-minus"></i></button>
+                <button class="window-btn" id="maximizeBtn"><i class="fas fa-expand"></i></button>
+                <button class="window-btn" id="closeBtn"><i class="fas fa-times"></i></button>
+            </div>
+        </div>
+        
+        <!-- 顶部工具栏 -->
+        <div class="toolbar">
+            <div class="toolbar-group">
+                <button class="toolbar-btn" id="fileMenuBtn">
+                    <i class="fas fa-film"></i>
+                    <span>文件</span>
+                </button>
+                <button class="toolbar-btn" id="timelineBtn">
+                    <i class="fas fa-list-ol"></i>
+                    <span>时间轴</span>
+                </button>
+                <button class="toolbar-btn" id="animationBtn">
+                    <i class="fas fa-play-circle"></i>
+                    <span>动画控制</span>
+                </button>
+                <button class="toolbar-btn" id="frameEditBtn">
+                    <i class="fas fa-edit"></i>
+                    <span>帧编辑</span>
+                </button>
+                <button class="toolbar-btn" id="addFrameBtn">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>添加帧</span>
+                </button>
+            </div>
+            
+            <div class="separator"></div>
+            
+            <div class="toolbar-group">
+                <button class="toolbar-btn" id="undoBtn" title="撤销">
+                    <i class="fas fa-undo"></i>
+                </button>
+                <button class="toolbar-btn" id="redoBtn" title="重做">
+                    <i class="fas fa-redo"></i>
+                </button>
+                <button class="toolbar-btn" id="resetBtn" title="重置">
+                    <i class="fas fa-history"></i>
+                </button>
+            </div>
+            
+            <div class="separator"></div>
+            
+            <div class="toolbar-group">
+                <button class="toolbar-btn" id="previewBtn" title="预览动画">
+                    <i class="fas fa-eye"></i>
+                    <span>预览</span>
+                </button>
+                <button class="toolbar-btn" id="exportBtn" title="导出动画">
+                    <i class="fas fa-download"></i>
+                    <span>导出</span>
+                </button>
+            </div>
+        </div>
+        
+        <!-- 文件操作栏 -->
+        <div class="file-bar">
+            <button class="file-btn" id="newAnimationBtn">
+                <i class="fas fa-film"></i>
+                新建动画
+            </button>
+            <button class="file-btn secondary" id="importFramesBtn">
+                <i class="fas fa-folder-open"></i>
+                导入帧
+            </button>
+            <input type="file" id="framesInput" accept=".png,.jpg,.jpeg,.webp" multiple style="display: none;">
+            <button class="file-btn secondary" id="addBlankFrameBtn">
+                <i class="fas fa-plus"></i>
+                添加空白帧
+            </button>
+            <button class="file-btn secondary" id="duplicateFrameBtn">
+                <i class="fas fa-copy"></i>
+                复制当前帧
+            </button>
+            <div style="flex: 1;"></div>
+            <button class="file-btn" id="clearAllBtn">
+                <i class="fas fa-trash-alt"></i>
+                清空所有帧
+            </button>
+        </div>
+        
+        <!-- 主要内容区 -->
+        <div class="main-content">
+            <!-- 侧边栏 -->
+            <div class="sidebar">
+                <div class="sidebar-section">
+                    <h3>动画设置</h3>
+                    <div class="sidebar-item active" id="sidebarHome">
+                        <i class="fas fa-sliders-h"></i>
+                        <span>动画属性</span>
+                    </div>
+                    <div class="sidebar-item" id="sidebarFrames">
+                        <i class="fas fa-layer-group"></i>
+                        <span>帧管理</span>
+                    </div>
+                    <div class="sidebar-item" id="sidebarExport">
+                        <i class="fas fa-file-export"></i>
+                        <span>导出设置</span>
+                    </div>
+                </div>
+                
+                <div class="sidebar-section">
+                    <h3>帧操作</h3>
+                    <div class="sidebar-item" id="sidebarFrameAdd">
+                        <i class="fas fa-plus-circle"></i>
+                        <span>添加帧</span>
+                    </div>
+                    <div class="sidebar-item" id="sidebarFrameDelete">
+                        <i class="fas fa-trash-alt"></i>
+                        <span>删除帧</span>
+                    </div>
+                    <div class="sidebar-item" id="sidebarFrameReorder">
+                        <i class="fas fa-exchange-alt"></i>
+                        <span>调整顺序</span>
+                    </div>
+                </div>
+                
+                <div class="sidebar-section">
+                    <h3>动画效果</h3>
+                    <div class="sidebar-item">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>帧速率</span>
+                    </div>
+                    <div class="sidebar-item">
+                        <i class="fas fa-redo"></i>
+                        <span>循环设置</span>
+                    </div>
+                    <div class="sidebar-item">
+                        <i class="fas fa-transition"></i>
+                        <span>过渡效果</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 编辑区域 -->
+            <div class="editor-container">
+                <!-- 帧编辑面板 -->
+                <div class="frame-edit-panel" id="frameEditPanel">
+                    <div class="adjust-group">
+                        <h4>帧持续时间</h4>
+                        <input type="range" min="1" max="100" value="10" class="adjust-slider" id="frameDurationSlider">
+                        <div class="adjust-value" id="frameDurationValue">100ms</div>
+                    </div>
+                    <div class="adjust-group">
+                        <h4>透明度</h4>
+                        <input type="range" min="0" max="100" value="100" class="adjust-slider" id="frameOpacitySlider">
+                        <div class="adjust-value" id="frameOpacityValue">100%</div>
+                    </div>
+                    <button class="file-btn secondary" id="applyToAllBtn">
+                        <i class="fas fa-expand-arrows-alt"></i>
+                        应用到所有帧
+                    </button>
+                </div>
+                
+                <!-- 动画控制面板 -->
+                <div class="animation-controls" id="animationControls">
+                    <div class="animation-control-group">
+                        <label>帧率 (FPS):</label>
+                        <input type="number" class="animation-input" id="fpsInput" min="1" max="60" value="10">
+                    </div>
+                    <div class="animation-control-group">
+                        <label>循环次数:</label>
+                        <input type="number" class="animation-input" id="loopInput" min="0" value="0">
+                        <span style="font-size: 12px; color: #777;">(0=无限)</span>
+                    </div>
+                    <div class="animation-control-group">
+                        <label>画布尺寸:</label>
+                        <input type="number" class="animation-input" id="canvasWidth" min="100" max="2000" value="800">
+                        <span>x</span>
+                        <input type="number" class="animation-input" id="canvasHeight" min="100" max="2000" value="600">
+                    </div>
+                    <div class="playback-controls">
+                        <button class="playback-btn" id="playBtn">
+                            <i class="fas fa-play"></i>
+                            播放
+                        </button>
+                        <button class="playback-btn secondary" id="pauseBtn">
+                            <i class="fas fa-pause"></i>
+                            暂停
+                        </button>
+                        <button class="playback-btn secondary" id="stopBtn">
+                            <i class="fas fa-stop"></i>
+                            停止
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 图片容器 -->
+                <div class="image-container">
+                    <div class="image-wrapper">
+                        <canvas id="imageCanvas" width="800" height="600"></canvas>
+                        <div class="canvas-controls">
+                            <button class="canvas-btn" id="prevFrameBtn">
+                                <i class="fas fa-arrow-left"></i>
+                                上一帧
+                            </button>
+                            <button class="canvas-btn" id="nextFrameBtn">
+                                <i class="fas fa-arrow-right"></i>
+                                下一帧
+                            </button>
+                            <button class="canvas-btn" id="deleteFrameBtn">
+                                <i class="fas fa-trash-alt"></i>
+                                删除帧
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 时间轴 -->
+                <div class="timeline-container" id="timelineContainer">
+                    <div class="timeline-header">
+                        <h4 style="margin: 0;">时间轴 (共 <span id="frameCount">0</span> 帧)</h4>
+                        <div class="timeline-controls">
+                            <button class="file-btn secondary" style="padding: 4px 8px; font-size: 12px;" id="addFrameTimelineBtn">
+                                <i class="fas fa-plus"></i>
+                                添加帧
+                            </button>
+                            <button class="file-btn secondary" style="padding: 4px 8px; font-size: 12px;" id="clearTimelineBtn">
+                                <i class="fas fa-trash"></i>
+                                清空
+                            </button>
+                        </div>
+                    </div>
+                    <div class="timeline-frames" id="timelineFrames">
+                        <!-- 帧缩略图将动态添加到这里 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 状态栏 -->
+        <div class="status-bar">
+            <div class="status-item">
+                <i class="fas fa-layer-group"></i>
+                <span>当前帧: <span id="currentFrameIndex">1</span>/<span id="totalFrames">0</span></span>
+            </div>
+            <div class="status-item">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>帧率: <span id="currentFPS">10</span> FPS</span>
+            </div>
+            <div class="status-item">
+                <i class="fas fa-clock"></i>
+                <span>时长: <span id="animationDuration">0</span>秒</span>
+            </div>
+            <div class="status-item">
+                <i class="fas fa-expand-alt"></i>
+                <span>尺寸: <span id="canvasSize">800 x 600</span></span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 新建动画模态框 -->
+    <div class="modal-overlay" id="newAnimationModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>新建动画</h3>
+                <button class="modal-close" id="closeNewModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>动画名称</label>
+                    <input type="text" class="form-control" id="newAnimationName" placeholder="请输入动画名称" value="未命名动画">
+                </div>
+                <div class="form-group">
+                    <label>动画尺寸</label>
+                    <select class="form-control" id="animationSizeSelect">
+                        <option value="800x600">800 x 600 (标准)</option>
+                        <option value="640x480">640 x 480 (小)</option>
+                        <option value="1280x720">1280 x 720 (高清)</option>
+                        <option value="1920x1080">1920 x 1080 (全高清)</option>
+                        <option value="custom">自定义尺寸</option>
+                    </select>
+                </div>
+                <div class="form-group" id="customAnimationSizeGroup" style="display: none;">
+                    <label>自定义尺寸</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="number" class="form-control" id="customAnimationWidth" placeholder="宽度" value="800" min="100" max="2000">
+                        <input type="number" class="form-control" id="customAnimationHeight" placeholder="高度" value="600" min="100" max="2000">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>背景颜色</label>
+                    <input type="color" class="form-control" id="animationBackgroundColor" value="#ffffff" style="height: 40px;">
+                </div>
+                <div class="form-group">
+                    <label>初始帧数</label>
+                    <input type="number" class="form-control" id="initialFrameCount" min="1" max="100" value="5">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="file-btn secondary" id="cancelNewAnimation">取消</button>
+                <button class="file-btn" id="createNewAnimation">创建</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 导出动画模态框 -->
+    <div class="modal-overlay" id="exportAnimationModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>导出动画</h3>
+                <button class="modal-close" id="closeExportModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>动画名称</label>
+                    <input type="text" class="form-control" id="exportAnimationName" placeholder="请输入动画名称">
+                </div>
+                <div class="form-group">
+                    <label>导出格式</label>
+                    <div class="export-options">
+                        <div class="export-option selected" data-format="gif">
+                            <i class="fas fa-file-image"></i>
+                            <div>GIF动画</div>
+                            <small>兼容性好，适合简单动画</small>
+                        </div>
+                        <div class="export-option" data-format="mp4">
+                            <i class="fas fa-file-video"></i>
+                            <div>MP4视频</div>
+                            <small>高质量，适合复杂动画</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>帧率 (FPS)</label>
+                    <input type="range" min="1" max="30" value="10" class="adjust-slider" id="exportFpsSlider">
+                    <div class="adjust-value" id="exportFpsValue">10 FPS</div>
+                </div>
+                <div class="form-group" id="gifOptions">
+                    <label>GIF设置</label>
+                    <div style="display: flex; gap: 20px; margin-top: 10px;">
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <input type="checkbox" id="gifLoop" checked>
+                            <label for="gifLoop">循环播放</label>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <input type="checkbox" id="gifOptimize" checked>
+                            <label for="gifOptimize">优化文件大小</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group" id="mp4Options" style="display: none;">
+                    <label>MP4设置</label>
+                    <div style="display: flex; gap: 20px; margin-top: 10px;">
+                        <div style="display: flex; flex-direction: column; gap: 5px;">
+                            <label for="videoQuality">视频质量</label>
+                            <input type="range" min="1" max="10" value="8" class="adjust-slider" id="videoQualitySlider">
+                            <div class="adjust-value" id="videoQualityValue">8/10</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="file-btn secondary" id="cancelExportAnimation">取消</button>
+                <button class="file-btn" id="confirmExportAnimation">导出</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 预览窗口 -->
+    <div class="preview-window" id="previewWindow">
+        <div class="preview-header">
+            <h3 style="margin: 0;">动画预览</h3>
+            <button class="modal-close" id="closePreview">&times;</button>
+        </div>
+        <div class="preview-body">
+            <canvas id="previewCanvas" width="800" height="600" class="preview-canvas"></canvas>
+        </div>
+        <div class="preview-footer">
+            <div style="display: flex; align-items: center; gap: 10px; margin-right: auto;">
+                <span>帧: <span id="previewFrameIndex">1</span>/<span id="previewTotalFrames">0</span></span>
+                <span>FPS: <span id="previewFPS">10</span></span>
+            </div>
+            <button class="playback-btn secondary" id="previewPlayBtn">
+                <i class="fas fa-play"></i>
+                播放
+            </button>
+            <button class="playback-btn secondary" id="closePreviewBtn">
+                关闭
+            </button>
+        </div>
+    </div>
+    
+    <!-- 加载遮罩 -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div id="loadingText">正在生成动画文件，请稍候...</div>
+        <div id="loadingProgress" style="margin-top: 10px; font-size: 14px;"></div>
+    </div>
+    
+    <!-- 消息提示 -->
+    <div class="toast" id="toast">
+        <i class="fas fa-check-circle"></i>
+        <span id="toastMessage">操作成功</span>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.min.js"></script>
+    <script>
+        // 获取Canvas和上下文
+        const canvas = document.getElementById('imageCanvas');
+        const ctx = canvas.getContext('2d');
+        const previewCanvas = document.getElementById('previewCanvas');
+        const previewCtx = previewCanvas.getContext('2d');
+        
+        // 动画状态
+        let animationState = {
+            name: '未命名动画',
+            frames: [], // 存储每一帧的数据
+            currentFrameIndex: 0,
+            fps: 10,
+            loopCount: 0, // 0表示无限循环
+            canvasWidth: 800,
+            canvasHeight: 600,
+            isPlaying: false,
+            playInterval: null,
+            history: [],
+            historyIndex: -1,
+            frameDurations: [] // 每一帧的持续时间(ms)
+        };
+        
+        // 元素引用
+        const documentTitle = document.getElementById('documentTitle');
+        const currentFrameIndex = document.getElementById('currentFrameIndex');
+        const totalFrames = document.getElementById('totalFrames');
+        const currentFPS = document.getElementById('currentFPS');
+        const animationDuration = document.getElementById('animationDuration');
+        const canvasSize = document.getElementById('canvasSize');
+        const frameCount = document.getElementById('frameCount');
+        const timelineFrames = document.getElementById('timelineFrames');
+        
+        // 模态框元素
+        const newAnimationModal = document.getElementById('newAnimationModal');
+        const exportAnimationModal = document.getElementById('exportAnimationModal');
+        const previewWindow = document.getElementById('previewWindow');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        
+        // 面板元素
+        const timelineContainer = document.getElementById('timelineContainer');
+        const animationControls = document.getElementById('animationControls');
+        const frameEditPanel = document.getElementById('frameEditPanel');
+        
+        // 显示消息提示
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            toastMessage.textContent = message;
+            toast.className = 'toast';
+            toast.classList.add(type);
+            toast.style.display = 'flex';
+            
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+        
+        // 显示/隐藏加载遮罩
+        function showLoading(text = '正在处理，请稍候...') {
+            document.getElementById('loadingText').textContent = text;
+            loadingOverlay.style.display = 'flex';
+        }
+        
+        function hideLoading() {
+            loadingOverlay.style.display = 'none';
+        }
+        
+        // 显示/隐藏模态框
+        function showModal(modal) {
+            modal.style.display = 'flex';
+        }
+        
+        function hideModal(modal) {
+            modal.style.display = 'none';
+        }
+        
+        // 更新文档信息
+        function updateDocumentInfo() {
+            documentTitle.textContent = animationState.name;
+            currentFrameIndex.textContent = animationState.currentFrameIndex + 1;
+            totalFrames.textContent = animationState.frames.length;
+            currentFPS.textContent = animationState.fps;
+            canvasSize.textContent = `${animationState.canvasWidth} x ${animationState.canvasHeight}`;
+            frameCount.textContent = animationState.frames.length;
+            
+            // 计算动画总时长
+            const totalDuration = animationState.frames.reduce((sum, frame, index) => {
+                return sum + (animationState.frameDurations[index] || 100);
+            }, 0);
+            animationDuration.textContent = (totalDuration / 1000).toFixed(2);
+        }
+        
+        // 创建空白帧
+        function createBlankFrame(width, height, backgroundColor = '#ffffff') {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = width;
+            tempCanvas.height = height;
+            const tempCtx = tempCanvas.getContext('2d');
+            
+            // 填充背景色
+            tempCtx.fillStyle = backgroundColor;
+            tempCtx.fillRect(0, 0, width, height);
+            
+            return tempCanvas.toDataURL('image/png');
+        }
+        
+        // 添加帧
+        function addFrame(imageData = null) {
+            const frameIndex = animationState.frames.length;
+            
+            if (!imageData) {
+                imageData = createBlankFrame(
+                    animationState.canvasWidth, 
+                    animationState.canvasHeight, 
+                    '#ffffff'
+                );
+            }
+            
+            animationState.frames.push(imageData);
+            animationState.frameDurations.push(100); // 默认100ms
+            
+            // 更新当前帧索引
+            animationState.currentFrameIndex = frameIndex;
+            
+            // 渲染当前帧
+            renderCurrentFrame();
+            
+            // 更新时间轴
+            updateTimeline();
+            
+            // 更新信息
+            updateDocumentInfo();
+            
+            // 保存历史记录
+            saveToHistory();
+            
+            showToast(`已添加第${frameIndex + 1}帧`);
+        }
+        
+        // 渲染当前帧到主画布
+        function renderCurrentFrame() {
+            if (animationState.frames.length === 0) return;
+            
+            const frameData = animationState.frames[animationState.currentFrameIndex];
+            const img = new Image();
+            
+            img.onload = function() {
+                // 清除画布
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // 绘制图片
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                
+                // 更新帧持续时间显示
+                const duration = animationState.frameDurations[animationState.currentFrameIndex] || 100;
+                document.getElementById('frameDurationValue').textContent = `${duration}ms`;
+                document.getElementById('frameDurationSlider').value = duration;
+            };
+            
+            img.src = frameData;
+        }
+        
+        // 更新时间轴显示
+        function updateTimeline() {
+            timelineFrames.innerHTML = '';
+            
+            animationState.frames.forEach((frameData, index) => {
+                const frameItem = document.createElement('div');
+                frameItem.className = `frame-item ${index === animationState.currentFrameIndex ? 'active' : ''}`;
+                frameItem.setAttribute('data-index', index);
+                
+                // 创建缩略图画布
+                const thumbCanvas = document.createElement('canvas');
+                thumbCanvas.width = 80;
+                thumbCanvas.height = 60;
+                const thumbCtx = thumbCanvas.getContext('2d');
+                
+                const img = new Image();
+                img.onload = function() {
+                    // 绘制缩略图
+                    thumbCtx.drawImage(img, 0, 0, thumbCanvas.width, thumbCanvas.height);
+                };
+                img.src = frameData;
+                
+                frameItem.appendChild(thumbCanvas);
+                
+                // 添加帧编号
+                const frameNumber = document.createElement('div');
+                frameNumber.className = 'frame-number';
+                frameNumber.textContent = index + 1;
+                frameItem.appendChild(frameNumber);
+                
+                // 添加操作按钮
+                const frameActions = document.createElement('div');
+                frameActions.className = 'frame-actions';
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'frame-btn';
+                deleteBtn.innerHTML = '<i class="fas fa-times"></i>';
+                deleteBtn.title = '删除此帧';
+                deleteBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    deleteFrame(index);
+                });
+                
+                frameActions.appendChild(deleteBtn);
+                frameItem.appendChild(frameActions);
+                
+                // 点击选择帧
+                frameItem.addEventListener('click', function() {
+                    selectFrame(index);
+                });
+                
+                timelineFrames.appendChild(frameItem);
+            });
+            
+            // 滚动到当前帧
+            const currentFrameElement = timelineFrames.querySelector(`.frame-item[data-index="${animationState.currentFrameIndex}"]`);
+            if (currentFrameElement) {
+                currentFrameElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }
+        }
+        
+        // 选择帧
+        function selectFrame(index) {
+            if (index >= 0 && index < animationState.frames.length) {
+                animationState.currentFrameIndex = index;
+                renderCurrentFrame();
+                updateTimeline();
+                updateDocumentInfo();
+            }
+        }
+        
+        // 删除帧
+        function deleteFrame(index) {
+            if (animationState.frames.length <= 1) {
+                showToast('至少需要保留一帧', 'warning');
+                return;
+            }
+            
+            if (confirm(`确定要删除第${index + 1}帧吗？`)) {
+                animationState.frames.splice(index, 1);
+                animationState.frameDurations.splice(index, 1);
+                
+                // 调整当前帧索引
+                if (animationState.currentFrameIndex >= animationState.frames.length) {
+                    animationState.currentFrameIndex = Math.max(0, animationState.frames.length - 1);
+                }
+                
+                renderCurrentFrame();
+                updateTimeline();
+                updateDocumentInfo();
+                saveToHistory();
+                
+                showToast(`已删除第${index + 1}帧`);
+            }
+        }
+        
+        // 保存当前状态到历史记录
+        function saveToHistory() {
+            // 只保存最近10个状态
+            if (animationState.history.length >= 10) {
+                animationState.history.shift();
+            }
+            
+            animationState.history.push({
+                frames: [...animationState.frames],
+                frameDurations: [...animationState.frameDurations],
+                currentFrameIndex: animationState.currentFrameIndex,
+                canvasWidth: animationState.canvasWidth,
+                canvasHeight: animationState.canvasHeight
+            });
+            
+            animationState.historyIndex = animationState.history.length - 1;
+        }
+        
+        // 从历史记录恢复状态
+        function restoreFromHistory(index) {
+            if (index >= 0 && index < animationState.history.length) {
+                const historyState = animationState.history[index];
+                animationState.frames = [...historyState.frames];
+                animationState.frameDurations = [...historyState.frameDurations];
+                animationState.currentFrameIndex = historyState.currentFrameIndex;
+                animationState.canvasWidth = historyState.canvasWidth;
+                animationState.canvasHeight = historyState.canvasHeight;
+                
+                // 更新画布尺寸
+                canvas.width = animationState.canvasWidth;
+                canvas.height = animationState.canvasHeight;
+                previewCanvas.width = animationState.canvasWidth;
+                previewCanvas.height = animationState.canvasHeight;
+                
+                renderCurrentFrame();
+                updateTimeline();
+                updateDocumentInfo();
+                animationState.historyIndex = index;
+            }
+        }
+        
+        // 播放动画
+        function playAnimation() {
+            if (animationState.frames.length === 0) {
+                showToast('请先添加帧', 'warning');
+                return;
+            }
+            
+            if (animationState.isPlaying) return;
+            
+            animationState.isPlaying = true;
+            let currentPreviewFrame = 0;
+            
+            // 更新预览画布尺寸
+            previewCanvas.width = animationState.canvasWidth;
+            previewCanvas.height = animationState.canvasHeight;
+            
+            // 显示预览窗口
+            previewWindow.classList.add('active');
+            document.getElementById('previewTotalFrames').textContent = animationState.frames.length;
+            document.getElementById('previewFPS').textContent = animationState.fps;
+            
+            // 播放函数
+            function playFrame() {
+                if (!animationState.isPlaying) return;
+                
+                const frameData = animationState.frames[currentPreviewFrame];
+                const img = new Image();
+                
+                img.onload = function() {
+                    previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+                    previewCtx.drawImage(img, 0, 0, previewCanvas.width, previewCanvas.height);
+                    
+                    // 更新帧编号显示
+                    document.getElementById('previewFrameIndex').textContent = currentPreviewFrame + 1;
+                    
+                    // 移动到下一帧
+                    currentPreviewFrame++;
+                    if (currentPreviewFrame >= animationState.frames.length) {
+                        currentPreviewFrame = 0;
+                    }
+                    
+                    // 设置下一帧的延迟
+                    const delay = 1000 / animationState.fps;
+                    setTimeout(playFrame, delay);
+                };
+                
+                img.src = frameData;
+            }
+            
+            // 开始播放
+            playFrame();
+        }
+        
+        // 停止播放
+        function stopAnimation() {
+            animationState.isPlaying = false;
+            previewWindow.classList.remove('active');
+        }
+        
+        // 导出为GIF
+        function exportAsGif(options) {
+            if (animationState.frames.length === 0) {
+                showToast('请先添加帧', 'warning');
+                return;
+            }
+            
+            showLoading('正在生成GIF动画...');
+            
+            // 创建GIF对象
+            const gif = new GIF({
+                workers: 2,
+                quality: 10,
+                width: animationState.canvasWidth,
+                height: animationState.canvasHeight,
+                workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js'
+            });
+            
+            // 设置循环
+            if (options.loop) {
+                gif.options.repeat = 0; // 0 = 无限循环
+            } else {
+                gif.options.repeat = -1; // -1 = 不循环
+            }
+            
+            // 添加每一帧
+            let loadedFrames = 0;
+            animationState.frames.forEach((frameData, index) => {
+                const img = new Image();
+                img.onload = function() {
+                    // 创建临时画布
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = animationState.canvasWidth;
+                    tempCanvas.height = animationState.canvasHeight;
+                    const tempCtx = tempCanvas.getContext('2d');
+                    
+                    // 绘制到临时画布
+                    tempCtx.drawImage(img, 0, 0, tempCanvas.width, tempCanvas.height);
+                    
+                    // 添加到GIF
+                    gif.addFrame(tempCtx, { 
+                        delay: animationState.frameDurations[index] || 100,
+                        copy: true 
+                    });
+                    
+                    loadedFrames++;
+                    
+                    // 更新加载进度
+                    document.getElementById('loadingProgress').textContent = 
+                        `已加载 ${loadedFrames}/${animationState.frames.length} 帧`;
+                    
+                    // 当所有帧都加载完成后，开始渲染
+                    if (loadedFrames === animationState.frames.length) {
+                        gif.on('finished', function(blob) {
+                            // 创建下载链接
+                            const url = URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.download = `${options.name}.gif`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            URL.revokeObjectURL(url);
+                            
+                            hideLoading();
+                            showToast('GIF动画导出成功！');
+                        });
+                        
+                        gif.render();
+                    }
+                };
+                
+                img.src = frameData;
+            });
+        }
+        
+        // 导出为MP4（简化版，实际生产环境需要服务器端支持）
+        function exportAsMp4(options) {
+            if (animationState.frames.length === 0) {
+                showToast('请先添加帧', 'warning');
+                return;
+            }
+            
+            showLoading('正在生成MP4视频...');
+            
+            // 这里简化处理，实际生产环境中需要使用ffmpeg.js或服务器端转换
+            setTimeout(() => {
+                showToast('MP4导出功能需要服务器端支持。在实际应用中，请使用后端FFmpeg服务进行转换。', 'warning');
+                hideLoading();
+            }, 2000);
+        }
+        
+        // 初始化
+        function init() {
+            // 创建默认空白动画
+            animationState.name = '未命名动画';
+            animationState.canvasWidth = 800;
+            animationState.canvasHeight = 600;
+            animationState.fps = 10;
+            
+            canvas.width = animationState.canvasWidth;
+            canvas.height = animationState.canvasHeight;
+            
+            // 添加第一帧
+            addFrame();
+            
+            // 更新文档信息
+            updateDocumentInfo();
+        }
+        
+        // 工具栏按钮功能
+        document.getElementById('timelineBtn').addEventListener('click', function() {
+            timelineContainer.classList.toggle('active');
+            this.classList.toggle('active');
+        });
+        
+        document.getElementById('animationBtn').addEventListener('click', function() {
+            animationControls.classList.toggle('active');
+            this.classList.toggle('active');
+        });
+        
+        document.getElementById('frameEditBtn').addEventListener('click', function() {
+            frameEditPanel.classList.toggle('active');
+            this.classList.toggle('active');
+        });
+        
+        document.getElementById('addFrameBtn').addEventListener('click', function() {
+            addFrame();
+        });
+        
+        // 帧持续时间滑块
+        document.getElementById('frameDurationSlider').addEventListener('input', function() {
+            const value = parseInt(this.value);
+            document.getElementById('frameDurationValue').textContent = `${value}ms`;
+            
+            if (animationState.currentFrameIndex >= 0) {
+                animationState.frameDurations[animationState.currentFrameIndex] = value;
+                updateDocumentInfo();
+            }
+        });
+        
+        // 应用到所有帧
+        document.getElementById('applyToAllBtn').addEventListener('click', function() {
+            if (animationState.frames.length === 0) return;
+            
+            const duration = parseInt(document.getElementById('frameDurationSlider').value);
+            animationState.frameDurations = animationState.frameDurations.map(() => duration);
+            updateDocumentInfo();
+            showToast(`已将帧持续时间应用到所有帧 (${duration}ms)`);
+        });
+        
+        // 动画控制
+        document.getElementById('fpsInput').addEventListener('change', function() {
+            const value = parseInt(this.value);
+            if (value >= 1 && value <= 60) {
+                animationState.fps = value;
+                updateDocumentInfo();
+            }
+        });
+        
+        document.getElementById('canvasWidth').addEventListener('change', function() {
+            const value = parseInt(this.value);
+            if (value >= 100 && value <= 2000) {
+                animationState.canvasWidth = value;
+                canvas.width = value;
+                previewCanvas.width = value;
+                updateDocumentInfo();
+            }
+        });
+        
+        document.getElementById('canvasHeight').addEventListener('change', function() {
+            const value = parseInt(this.value);
+            if (value >= 100 && value <= 2000) {
+                animationState.canvasHeight = value;
+                canvas.height = value;
+                previewCanvas.height = value;
+                updateDocumentInfo();
+            }
+        });
+        
+        // 播放控制
+        document.getElementById('playBtn').addEventListener('click', playAnimation);
+        
+        document.getElementById('previewPlayBtn').addEventListener('click', function() {
+            if (animationState.isPlaying) {
+                animationState.isPlaying = false;
+                this.innerHTML = '<i class="fas fa-play"></i> 播放';
+            } else {
+                playAnimation();
+                this.innerHTML = '<i class="fas fa-pause"></i> 暂停';
+            }
+        });
+        
+        document.getElementById('pauseBtn').addEventListener('click', function() {
+            animationState.isPlaying = false;
+        });
+        
+        document.getElementById('stopBtn').addEventListener('click', stopAnimation);
+        
+        document.getElementById('closePreviewBtn').addEventListener('click', function() {
+            stopAnimation();
+        });
+        
+        document.getElementById('closePreview').addEventListener('click', function() {
+            stopAnimation();
+        });
+        
+        // 帧导航
+        document.getElementById('prevFrameBtn').addEventListener('click', function() {
+            if (animationState.frames.length > 0) {
+                let newIndex = animationState.currentFrameIndex - 1;
+                if (newIndex < 0) newIndex = animationState.frames.length - 1;
+                selectFrame(newIndex);
+            }
+        });
+        
+        document.getElementById('nextFrameBtn').addEventListener('click', function() {
+            if (animationState.frames.length > 0) {
+                let newIndex = animationState.currentFrameIndex + 1;
+                if (newIndex >= animationState.frames.length) newIndex = 0;
+                selectFrame(newIndex);
+            }
+        });
+        
+        document.getElementById('deleteFrameBtn').addEventListener('click', function() {
+            if (animationState.frames.length > 0) {
+                deleteFrame(animationState.currentFrameIndex);
+            }
+        });
+        
+        // 撤销/重做功能
+        document.getElementById('undoBtn').addEventListener('click', function() {
+            if (animationState.historyIndex > 0) {
+                restoreFromHistory(animationState.historyIndex - 1);
+                showToast('已撤销');
+            } else {
+                showToast('无法撤销', 'warning');
+            }
+        });
+        
+        document.getElementById('redoBtn').addEventListener('click', function() {
+            if (animationState.historyIndex < animationState.history.length - 1) {
+                restoreFromHistory(animationState.historyIndex + 1);
+                showToast('已重做');
+            } else {
+                showToast('无法重做', 'warning');
+            }
+        });
+        
+        document.getElementById('resetBtn').addEventListener('click', function() {
+            if (confirm('确定要重置所有更改吗？')) {
+                if (animationState.history.length > 0) {
+                    restoreFromHistory(0);
+                    showToast('已重置到初始状态');
+                }
+            }
+        });
+        
+        // 新建动画
+        document.getElementById('newAnimationBtn').addEventListener('click', function() {
+            document.getElementById('newAnimationName').value = '未命名动画';
+            showModal(newAnimationModal);
+        });
+        
+        document.getElementById('animationSizeSelect').addEventListener('change', function() {
+            const customSizeGroup = document.getElementById('customAnimationSizeGroup');
+            if (this.value === 'custom') {
+                customSizeGroup.style.display = 'block';
+            } else {
+                customSizeGroup.style.display = 'none';
+            }
+        });
+        
+        document.getElementById('createNewAnimation').addEventListener('click', function() {
+            const animationName = document.getElementById('newAnimationName').value || '未命名动画';
+            const sizeSelect = document.getElementById('animationSizeSelect').value;
+            const backgroundColor = document.getElementById('animationBackgroundColor').value;
+            const initialFrameCount = parseInt(document.getElementById('initialFrameCount').value) || 5;
+            
+            let width, height;
+            
+            if (sizeSelect === 'custom') {
+                width = parseInt(document.getElementById('customAnimationWidth').value) || 800;
+                height = parseInt(document.getElementById('customAnimationHeight').value) || 600;
+            } else {
+                const dimensions = sizeSelect.split('x');
+                width = parseInt(dimensions[0]);
+                height = parseInt(dimensions[1]);
+            }
+            
+            // 限制尺寸范围
+            width = Math.max(100, Math.min(2000, width));
+            height = Math.max(100, Math.min(2000, height));
+            
+            // 更新动画状态
+            animationState.name = animationName;
+            animationState.canvasWidth = width;
+            animationState.canvasHeight = height;
+            animationState.frames = [];
+            animationState.frameDurations = [];
+            animationState.currentFrameIndex = 0;
+            animationState.history = [];
+            animationState.historyIndex = -1;
+            
+            // 更新画布尺寸
+            canvas.width = width;
+            canvas.height = height;
+            previewCanvas.width = width;
+            previewCanvas.height = height;
+            
+            // 添加初始帧
+            for (let i = 0; i < initialFrameCount; i++) {
+                addFrame(createBlankFrame(width, height, backgroundColor));
+            }
+            
+            // 选择第一帧
+            selectFrame(0);
+            
+            hideModal(newAnimationModal);
+            showToast(`已创建新动画: ${animationName}`);
+        });
+        
+        document.getElementById('cancelNewAnimation').addEventListener('click', function() {
+            hideModal(newAnimationModal);
+        });
+        
+        document.getElementById('closeNewModal').addEventListener('click', function() {
+            hideModal(newAnimationModal);
+        });
+        
+        // 导入帧
+        document.getElementById('importFramesBtn').addEventListener('click', function() {
+            document.getElementById('framesInput').click();
+        });
+        
+        document.getElementById('addBlankFrameBtn').addEventListener('click', function() {
+            addFrame();
+        });
+        
+        document.getElementById('duplicateFrameBtn').addEventListener('click', function() {
+            if (animationState.frames.length > 0) {
+                const currentFrameData = animationState.frames[animationState.currentFrameIndex];
+                addFrame(currentFrameData);
+                showToast('已复制当前帧');
+            }
+        });
+        
+        document.getElementById('clearAllBtn').addEventListener('click', function() {
+            if (animationState.frames.length > 0 && confirm('确定要清空所有帧吗？')) {
+                animationState.frames = [];
+                animationState.frameDurations = [];
+                animationState.currentFrameIndex = 0;
+                
+                // 添加一个空白帧
+                addFrame();
+                
+                showToast('已清空所有帧');
+            }
+        });
+        
+        document.getElementById('framesInput').addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            
+            if (files.length === 0) return;
+            
+            // 按文件名排序
+            files.sort((a, b) => a.name.localeCompare(b.name));
+            
+            let loadedCount = 0;
+            
+            files.forEach((file, index) => {
+                const fileName = file.name;
+                const fileExt = fileName.split('.').pop().toLowerCase();
+                
+                // 检查文件格式
+                const validFormats = ['png', 'jpg', 'jpeg', 'webp'];
+                if (!validFormats.includes(fileExt)) {
+                    showToast(`不支持的文件格式: ${fileName}`, 'error');
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    addFrame(event.target.result);
+                    loadedCount++;
+                    
+                    if (loadedCount === files.length) {
+                        showToast(`已导入 ${loadedCount} 帧`);
+                    }
+                };
+                
+                reader.onerror = function() {
+                    showToast(`读取文件失败: ${fileName}`, 'error');
+                };
+                
+                reader.readAsDataURL(file);
+            });
+            
+            // 清空文件输入
+            this.value = '';
+        });
+        
+        // 时间轴控制
+        document.getElementById('addFrameTimelineBtn').addEventListener('click', function() {
+            addFrame();
+        });
+        
+        document.getElementById('clearTimelineBtn').addEventListener('click', function() {
+            if (animationState.frames.length > 0 && confirm('确定要清空时间轴吗？')) {
+                animationState.frames = [];
+                animationState.frameDurations = [];
+                animationState.currentFrameIndex = 0;
+                
+                // 添加一个空白帧
+                addFrame();
+                
+                showToast('已清空时间轴');
+            }
+        });
+        
+        // 预览按钮
+        document.getElementById('previewBtn').addEventListener('click', function() {
+            if (animationState.frames.length === 0) {
+                showToast('请先添加帧', 'warning');
+                return;
+            }
+            
+            playAnimation();
+        });
+        
+        // 导出按钮
+        document.getElementById('exportBtn').addEventListener('click', function() {
+            if (animationState.frames.length === 0) {
+                showToast('请先添加帧', 'warning');
+                return;
+            }
+            
+            document.getElementById('exportAnimationName').value = animationState.name;
+            showModal(exportAnimationModal);
+        });
+        
+        // 导出格式选择
+        document.querySelectorAll('.export-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.export-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                this.classList.add('selected');
+                
+                const format = this.getAttribute('data-format');
+                if (format === 'gif') {
+                    document.getElementById('gifOptions').style.display = 'block';
+                    document.getElementById('mp4Options').style.display = 'none';
+                } else if (format === 'mp4') {
+                    document.getElementById('gifOptions').style.display = 'none';
+                    document.getElementById('mp4Options').style.display = 'block';
+                }
+            });
+        });
+        
+        // 导出FPS滑块
+        document.getElementById('exportFpsSlider').addEventListener('input', function() {
+            const value = parseInt(this.value);
+            document.getElementById('exportFpsValue').textContent = `${value} FPS`;
+        });
+        
+        // 视频质量滑块
+        document.getElementById('videoQualitySlider').addEventListener('input', function() {
+            const value = parseInt(this.value);
+            document.getElementById('videoQualityValue').textContent = `${value}/10`;
+        });
+        
+        // 确认导出
+        document.getElementById('confirmExportAnimation').addEventListener('click', function() {
+            const animationName = document.getElementById('exportAnimationName').value || animationState.name;
+            const exportFps = parseInt(document.getElementById('exportFpsSlider').value);
+            const selectedFormat = document.querySelector('.export-option.selected').getAttribute('data-format');
+            
+            const exportOptions = {
+                name: animationName,
+                fps: exportFps,
+                format: selectedFormat
+            };
+            
+            if (selectedFormat === 'gif') {
+                exportOptions.loop = document.getElementById('gifLoop').checked;
+                exportOptions.optimize = document.getElementById('gifOptimize').checked;
+                exportAsGif(exportOptions);
+            } else if (selectedFormat === 'mp4') {
+                exportOptions.quality = parseInt(document.getElementById('videoQualitySlider').value);
+                exportAsMp4(exportOptions);
+            }
+            
+            hideModal(exportAnimationModal);
+        });
+        
+        document.getElementById('cancelExportAnimation').addEventListener('click', function() {
+            hideModal(exportAnimationModal);
+        });
+        
+        document.getElementById('closeExportModal').addEventListener('click', function() {
+            hideModal(exportAnimationModal);
+        });
+        
+        // 侧边栏功能
+        document.querySelectorAll('.sidebar-item').forEach(item => {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.sidebar-item').forEach(i => {
+                    i.classList.remove('active');
+                });
+                this.classList.add('active');
+                
+                const id = this.id;
+                if (id === 'sidebarFrameAdd') {
+                    addFrame();
+                } else if (id === 'sidebarFrameDelete') {
+                    if (animationState.frames.length > 0) {
+                        deleteFrame(animationState.currentFrameIndex);
+                    }
+                } else if (id === 'sidebarExport') {
+                    document.getElementById('exportBtn').click();
+                }
+            });
+        });
+        
+        // 窗口控制按钮
+        document.getElementById('minimizeBtn').addEventListener('click', function() {
+            showToast('最小化功能在浏览器中不可用', 'warning');
+        });
+        
+        document.getElementById('maximizeBtn').addEventListener('click', function() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    showToast('全屏模式失败', 'warning');
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        });
+        
+        document.getElementById('closeBtn').addEventListener('click', function() {
+            if (confirm('确定要关闭动画制作器吗？')) {
+                showToast('动画制作器已关闭', 'warning');
+            }
+        });
+        
+        // 拖放功能
+        canvas.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            canvas.style.border = '3px dashed var(--primary-orange)';
+            canvas.style.boxShadow = '0 0 15px rgba(255, 152, 0, 0.3)';
+        });
+        
+        canvas.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            canvas.style.border = '1px solid var(--orange-border)';
+            canvas.style.boxShadow = 'var(--orange-shadow)';
+        });
+        
+        canvas.addEventListener('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            canvas.style.border = '1px solid var(--orange-border)';
+            canvas.style.boxShadow = 'var(--orange-shadow)';
+            
+            const files = Array.from(e.dataTransfer.files);
+            if (files.length === 0) return;
+            
+            // 按文件名排序
+            files.sort((a, b) => a.name.localeCompare(b.name));
+            
+            let loadedCount = 0;
+            
+            files.forEach((file, index) => {
+                const fileExt = file.name.split('.').pop().toLowerCase();
+                const validFormats = ['png', 'jpg', 'jpeg', 'webp'];
+                
+                if (!validFormats.includes(fileExt)) {
+                    showToast(`不支持的文件格式: ${file.name}`, 'error');
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    addFrame(event.target.result);
+                    loadedCount++;
+                    
+                    if (loadedCount === files.length) {
+                        showToast(`已拖放导入 ${loadedCount} 帧`);
+                    }
+                };
+                
+                reader.readAsDataURL(file);
+            });
+        });
+        
+        // 初始化应用
+        init();
+        
+        // 显示欢迎消息
+        setTimeout(() => {
+            showToast('欢迎使用MW在线动画制作器！', 'warning');
+        }, 1000);
+    </script>
+</body>
+</html>
